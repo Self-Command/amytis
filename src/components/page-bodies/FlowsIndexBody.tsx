@@ -5,7 +5,6 @@ import { firstPage, paginate } from '@/lib/pagination';
 import { toFlowIndexItems } from '@/lib/flow-stream';
 import { siteConfig } from '../../../site.config';
 import { notFound } from 'next/navigation';
-import { getTranslator } from '@/lib/i18n';
 import { localizeUrl } from '@/lib/urls';
 import FlowIndexClient from '@/components/FlowIndexClient';
 import FlowStream from '@/components/FlowStream';
@@ -26,7 +25,6 @@ const PAGE_SIZE = siteConfig.pagination.flows;
  */
 export default function FlowsIndexBody({ locale, page = 1 }: FlowsIndexBodyProps) {
   if (!isFeatureEnabled('flow')) notFound();
-  const { t } = getTranslator(locale);
 
   const allFlows = getAllFlows(locale);
   const slice = page === 1 ? firstPage(allFlows, PAGE_SIZE) : paginate(allFlows, page, PAGE_SIZE);
