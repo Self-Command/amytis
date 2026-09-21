@@ -119,6 +119,18 @@ export async function GET() {
         lang: locale,
       });
     }
+    for (const flow of getAllFlows(locale)) {
+      searchIndex.push({
+        title: flow.title,
+        slug: localizeUrl(`/flows/${flow.slug}`, locale).replace(/^\//, ''),
+        date: flow.date,
+        excerpt: flow.excerpt,
+        category: 'Flow',
+        tags: flow.tags,
+        content: stripMarkdown(flow.content),
+        lang: locale,
+      });
+    }
   }
 
   return Response.json(searchIndex);
