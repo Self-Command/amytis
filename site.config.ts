@@ -67,7 +67,7 @@ export const siteConfig = {
   },
 
   social,
-  share: { enabled: true, platforms: ['copy'] as const },
+  share: { enabled: true, platforms: ['copy'] as ('twitter' | 'facebook' | 'linkedin' | 'weibo' | 'reddit' | 'hackernews' | 'telegram' | 'bluesky' | 'mastodon' | 'douban' | 'zhihu' | 'copy')[] },
   subscribe: { substack: '', telegram: '', wechat: { qrCode: '', account: '' }, email: '' },
 
   features: {
@@ -108,7 +108,7 @@ export const siteConfig = {
   },
   series: { autoPaths: true, customPaths: {} as Record<string, string> },
   flows: { recentCount: 5 },
-  feed: { maxItems: 20, format: 'rss' as const, content: 'full' as const, includeFlows: false },
+  feed: { maxItems: 20, format: 'rss' as 'rss' | 'atom' | 'both', content: 'full' as 'excerpt' | 'full', includeFlows: false },
   images: { cdnBaseUrl: '' },
   themeColor: 'default',
   browserCheck: { updateUrl: 'https://browsehappy.com/' },
