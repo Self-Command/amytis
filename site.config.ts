@@ -34,8 +34,8 @@ export const siteConfig = {
   baseUrl: "https://self-command.github.io/amytis",
   ogImage: "/og-image.png",
   footerText: {
-    en: `(c) ${new Date().getFullYear()} Asterion Vale`,
-    zh: `(c) ${new Date().getFullYear()} 一叶渡星河`,
+    en: `© ${new Date().getFullYear()} Asterion Vale`,
+    zh: `© ${new Date().getFullYear()} 一叶渡星河`,
   },
 
   i18n: {
