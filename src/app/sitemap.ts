@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getAllPosts, getAllPages, getPostContentLocales, getPageContentLocales } from '@/lib/content/posts';
-import { getAllFlows } from '@/lib/content/flows';
+import { getAllFlows, getFlowContentLocales } from '@/lib/content/flows';
 import { getAllNotes, getNoteContentLocales } from '@/lib/content/notes';
 import { getAllBooks, getBookChapter } from '@/lib/content/books';
 import { getAllSeries, getSeriesData } from '@/lib/content/series';
