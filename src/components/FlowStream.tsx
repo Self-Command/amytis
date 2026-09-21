@@ -27,7 +27,7 @@ interface FlowStreamProps {
  */
 export default function FlowStream({ flows, slugRegistry, pagination, locale }: FlowStreamProps) {
   const groups = groupFlowsByMonth(flows);
-  const weekdayFmt = new Intl.DateTimeFormat(flowStreamLocaleTag(), {
+  const weekdayFmt = new Intl.DateTimeFormat(flowStreamLocaleTag(locale), {
     weekday: 'long',
     timeZone: 'UTC',
   });
