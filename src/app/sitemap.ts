@@ -25,6 +25,7 @@ import {
   getSeriesListUrl,
   getStaticPageUrl,
   getNoteUrl,
+  getFlowUrl,
   localizeUrl,
   withTrailingSlash,
 } from '@/lib/urls';
@@ -137,6 +138,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: flow.date,
     changeFrequency: 'monthly' as const,
     priority: 0.5,
+    ...languagesFor(getFlowUrl(flow.slug), getFlowContentLocales(flow)),
   }));
 
   const flowYears = new Set<string>();
@@ -210,15 +212,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.8,
       });
     }
-    if (flowEnabled && hasLocaleContent(locale, 'flows')) {
-      entries.push({
-        url: `${baseUrl}${localizeUrl('/flows', locale)}`,
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 0.8,
-      });
-    }
-        if (flowEnabled && hasLocaleContent(locale, 'notes')) {
+    if (flowEnabled && hasLocaleContent(locale, 'notes')) {
       entries.push({
         url: `${baseUrl}${localizeUrl('/notes', locale)}`,
         lastModified: new Date(),
@@ -296,20 +290,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       }
     }
 
-    // Flows of the locale tree.
-    if (flowEnabled) {
-      for (const flow of getAllFlows(locale)) {
-        const flowUrl = localizeUrl(`/flows/${flow.slug}`, locale);
-        entries.push({
-          url: `${baseUrl}${flowUrl}`,
-          lastModified: flow.date,
-          changeFrequency: 'monthly',
-          priority: 0.5,
-          ...languagesFor(flowUrl, getFlowContentLocales(flow.slug)),
-        });
-      }
-    }
-
     // Notes of the locale tree.
     if (flowEnabled) {
       for (const note of getAllNotes(locale)) {
@@ -319,6 +299,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
           changeFrequency: 'monthly',
           priority: 0.5,
           ...languagesFor(getNoteUrl(note.slug), getNoteContentLocales(note)),
+        });
+      }
+    }
+
+    // Flows of the locale tree.
+    if (flowEnabled && hasLocaleContent(locale, 'flows')) {
+      for (const flow of getAllFlows(locale)) {
+        entries.push({
+          url: `${baseUrl}${localizeUrl(getFlowUrl(flow.slug), locale)}`,
+          lastModified: flow.date,
+          changeFrequency: 'monthly',
+          priority: 0.5,
+          ...languagesFor(getFlowUrl(flow.slug), getFlowContentLocales(flow)),
         });
       }
     }
