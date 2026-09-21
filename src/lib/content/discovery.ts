@@ -131,7 +131,19 @@ function computeTreeRegistry(locale: string): Map<string, SlugRegistryEntry> {
 
     }
 
-    getAllNotes(locale).forEach(n => {
+    // Locale tree flows.
+    getAllFlows(locale).forEach(f => {
+      const existing = map.get(f.slug);
+      if (existing) {
+        throw new Error(
+          `[amytis] Flow slug "${f.slug}" collides with an existing ${existing.type} of the same slug. ` +
+          `Slugs must be unique across posts, flows, notes, and series so wikilinks resolve unambiguously.`
+        );
+      }
+      map.set(f.slug, { url: localizeUrl(getFlowUrl(f.slug), locale), type: 'flow', title: f.title });
+    });
+
+        getAllNotes(locale).forEach(n => {
       // Slugs and aliases must be unique across all content so a wikilink
       // [[target]] resolves unambiguously. A collision is a build-time error,
       // not a silent overwrite (strict-build invariant).
@@ -237,9 +249,7 @@ function buildBacklinkIndex(locale: string): Map<string, BacklinkSource[]> {
 
   getAllPosts(locale).forEach(p => addBacklinks(p.content, p.slug, p.title, 'post', getPostUrl(p)));
   getAllNotes(locale).forEach(n => addBacklinks(n.content, n.slug, n.title, 'note', localizeUrl(getNoteUrl(n.slug), locale)));
-  if (locale === DEFAULT_LOCALE) {
-    getAllFlows().forEach(f => addBacklinks(f.content, f.slug, f.title, 'flow', getFlowUrl(f.slug)));
-  }
+  getAllFlows(locale).forEach(f => addBacklinks(f.content, f.slug, f.title, 'flow', localizeUrl(getFlowUrl(f.slug), locale)));
 
   return index;
 }
