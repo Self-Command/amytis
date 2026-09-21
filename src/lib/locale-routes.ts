@@ -11,6 +11,7 @@ import {
 import { getAllSeries, getSeriesData } from './content/series';
 import { getAllBooks, getBookChapter, getBookData, type BookChapterData, type BookData } from './content/books';
 import { getAllNotes, getNoteBySlug, getTwinNote, type NoteData } from './content/notes';
+import { getAllFlows, getFlowBySlug, getTwinFlow, type FlowData } from './content/flows';
 import { createKeyedMemo } from './content/cache';
 import {
   getBookChapterUrl,
@@ -53,7 +54,7 @@ const POST_PAGE_SIZE = siteConfig.pagination.posts;
 const SERIES_PAGE_SIZE = siteConfig.pagination.series;
 const NOTES_PAGE_SIZE = siteConfig.pagination.notes;
 
-export type LocaleContentKind = 'any' | 'posts' | 'pages' | 'series' | 'books' | 'notes';
+export type LocaleContentKind = 'any' | 'posts' | 'pages' | 'series' | 'books' | 'notes' | 'flows';
 
 /**
  * Feature flag guarding each locale content kind, mirroring the unprefixed
@@ -61,7 +62,7 @@ export type LocaleContentKind = 'any' | 'posts' | 'pages' | 'series' | 'books' |
  * on `books`, notes belong to the `flow` feature; posts and pages are
  * ungated. Exported so tests pin the mapping.
  */
-export const LOCALE_KIND_FEATURES = { series: 'series', books: 'books', notes: 'flow' } as const;
+export const LOCALE_KIND_FEATURES = { series: 'series', books: 'books', notes: 'flow', flows: 'flow' } as const;
 
 function kindEnabled(kind: LocaleContentKind): boolean {
   const feature = (LOCALE_KIND_FEATURES as Partial<Record<LocaleContentKind, 'series' | 'books' | 'flow'>>)[kind];
@@ -77,8 +78,9 @@ export function hasLocaleContent(locale: string, kind: LocaleContentKind): boole
     case 'series': return Object.keys(getAllSeries(locale)).length > 0;
     case 'books': return getAllBooks(locale).length > 0;
     case 'notes': return getAllNotes(locale).length > 0;
+    case 'flows': return getAllFlows(locale).length > 0;
     case 'any':
-      return (['posts', 'pages', 'series', 'books', 'notes'] as const).some(k => hasLocaleContent(locale, k));
+      return (['posts', 'pages', 'series', 'books', 'notes', 'flows'] as const).some(k => hasLocaleContent(locale, k));
   }
 }
 
@@ -99,6 +101,7 @@ export type LocalizedResolution =
   | { kind: 'book'; locale: string; book: BookData }
   | { kind: 'chapter'; locale: string; book: BookData; chapter: BookChapterData }
   | { kind: 'note'; locale: string; note: NoteData }
+  | { kind: 'flow'; locale: string; flow: FlowData }
   | null;
 
 function parsePageNumber(raw: string): number | null {
@@ -136,7 +139,20 @@ export function resolveLocalizedPath(locale: string, segments: string[]): Locali
     if (first === 'books') {
       return hasLocaleContent(locale, 'books') ? { kind: 'booksListing', locale } : null;
     }
-    if (first === 'notes') {
+    if (first === 'flows') {
+    if (!kindEnabled('flows')) return null;
+    if (n === 1) {
+      return hasLocaleContent(locale, 'flows') ? { kind: 'localeHome', locale } : null;
+    }
+    if (n === 2) {
+      const flowSlug = safeDecodeParam(segments[1]);
+      const flow = getFlowBySlug(flowSlug, locale);
+      return flow ? { kind: 'flow', locale, flow } : null;
+    }
+    return null;
+  }
+
+  if (first === 'notes') {
       return hasLocaleContent(locale, 'notes') ? { kind: 'notesListing', locale, page: 1 } : null;
     }
     const seriesSlug = resolveSeriesListingPrefix(first, locale);
@@ -170,6 +186,19 @@ export function resolveLocalizedPath(locale: string, segments: string[]): Locali
     const chapterId = segments.slice(2).map(safeDecodeParam).join('/');
     const chapter = getBookChapter(book.slug, chapterId, locale);
     return chapter ? { kind: 'chapter', locale, book, chapter } : null;
+  }
+
+  if (first === 'flows') {
+    if (!kindEnabled('flows')) return null;
+    if (n === 1) {
+      return hasLocaleContent(locale, 'flows') ? { kind: 'localeHome', locale } : null;
+    }
+    if (n === 2) {
+      const flowSlug = safeDecodeParam(segments[1]);
+      const flow = getFlowBySlug(flowSlug, locale);
+      return flow ? { kind: 'flow', locale, flow } : null;
+    }
+    return null;
   }
 
   if (first === 'notes') {
@@ -257,6 +286,7 @@ export function localeSecondLevelParams(): { slug: string; postSlug: string }[] 
     if (hasLocaleContent(locale, 'posts')) params.push({ slug: locale, postSlug: getPostsBasePath() });
     if (hasLocaleContent(locale, 'series')) params.push({ slug: locale, postSlug: 'series' });
     if (hasLocaleContent(locale, 'books')) params.push({ slug: locale, postSlug: 'books' });
+    if (hasLocaleContent(locale, 'flows')) params.push({ slug: locale, postSlug: 'flows' });
     if (hasLocaleContent(locale, 'notes')) params.push({ slug: locale, postSlug: 'notes' });
     for (const { prefix } of seriesListingPrefixes(locale)) {
       params.push({ slug: locale, postSlug: prefix });
@@ -318,6 +348,13 @@ export function localeDeepParams(): { slug: string; postSlug: string; rest: stri
       }
     }
 
+    // Flows — locale flow entries.
+    if (kindEnabled('flows')) {
+      for (const flow of getAllFlows(locale)) {
+        push(locale, /flows/`);
+      }
+    }
+
     // Notes (+ pagination).
     if (kindEnabled('notes')) {
       const notes = getAllNotes(locale);
@@ -373,6 +410,9 @@ function localePathSets(locale: string): LocalePathSets {
     }
     if (hasLocaleContent(locale, 'series')) add(getSeriesListUrl(), kindEnabled('series'));
     if (hasLocaleContent(locale, 'books')) add(getBooksListUrl(), kindEnabled('books'));
+    if (hasLocaleContent(locale, 'flows')) {
+      add('/flows', kindEnabled('flows'));
+    }
     if (hasLocaleContent(locale, 'notes')) {
       add('/notes', kindEnabled('notes'));
       const localePages = Math.ceil(getAllNotes(locale).length / NOTES_PAGE_SIZE);
@@ -390,6 +430,12 @@ function localePathSets(locale: string): LocalePathSets {
     if (kindEnabled('notes')) {
       for (const note of getAllNotes(locale)) {
         add(getNoteUrl(note.slug), getTwinNote(note, DEFAULT_LOCALE) !== null);
+      }
+    }
+    if (kindEnabled('flows')) {
+      for (const flow of getAllFlows(locale)) {
+        const flowUrl = /flows/`;
+        add(flowUrl, getTwinFlow(flow, DEFAULT_LOCALE) !== null);
       }
     }
     for (const [seriesSlug, localePosts] of Object.entries(getAllSeries(locale))) {
