@@ -6,18 +6,20 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import MetaDot from '@/components/ui/MetaDot';
 import { groupFlowsByMonth, flowStreamLocaleTag } from '@/lib/flow-stream';
 import { getFlowUrl, localizeUrl } from '@/lib/urls';
+import { siteConfig } from '../../site.config';
 import type { FlowData } from '@/lib/content/flows';
 import type { SlugRegistryEntry } from '@/lib/content/discovery';
 
 interface FlowStreamProps {
   flows: FlowData[];
   slugRegistry: Map<string, SlugRegistryEntry>;
+  /** Locale the flow listing is rendered for (default tree when omitted). */
+  locale?: string;
   pagination?: {
     currentPage: number;
     totalPages: number;
     basePath: string;
   };
-  locale?: string;
 }
 
 /**
@@ -25,9 +27,10 @@ interface FlowStreamProps {
  * Server component — markdown renders at build time through the same
  * pipeline as the flow detail page. Column width comes from the parent.
  */
-export default function FlowStream({ flows, slugRegistry, pagination, locale }: FlowStreamProps) {
-  const groups = groupFlowsByMonth(flows);
-  const weekdayFmt = new Intl.DateTimeFormat(flowStreamLocaleTag(locale), {
+export default function FlowStream({ flows, slugRegistry, locale, pagination }: FlowStreamProps) {
+  const loc = locale ?? siteConfig.i18n.defaultLocale;
+  const groups = groupFlowsByMonth(flows, flowStreamLocaleTag(loc));
+  const weekdayFmt = new Intl.DateTimeFormat(flowStreamLocaleTag(loc), {
     weekday: 'long',
     timeZone: 'UTC',
   });
@@ -57,7 +60,7 @@ export default function FlowStream({ flows, slugRegistry, pagination, locale }: 
                     {i > 0 && <MetaDot className="mx-2 inline-block align-middle" />}
                     {seg.link ? (
                       <Link
-                        href={seg.link === 'year' ? `/flows/${groupYear}` : `/flows/${groupYear}/${groupMonth}`}
+                        href={seg.link === 'year' ? localizeUrl(`/flows/${groupYear}`, loc) : localizeUrl(`/flows/${groupYear}/${groupMonth}`, loc)}
                         className="no-underline text-accent hover:text-accent-hover transition-colors"
                       >
                         {seg.text.trim()}
@@ -77,7 +80,7 @@ export default function FlowStream({ flows, slugRegistry, pagination, locale }: 
               <article key={flow.slug} className="flow-card">
                 <header className="mb-4">
                   <div className="flex items-baseline justify-between gap-4">
-                    <Link href={(locale ? localizeUrl(getFlowUrl(flow.slug), locale) : getFlowUrl(flow.slug))} className="group/date no-underline min-w-0">
+                    <Link href={localizeUrl(getFlowUrl(flow.slug), loc)} className="group/date no-underline min-w-0">
                       <time
                         dateTime={flow.date}
                         className="text-sm font-mono text-accent group-hover/date:text-accent-hover transition-colors"
@@ -91,7 +94,7 @@ export default function FlowStream({ flows, slugRegistry, pagination, locale }: 
                     {/* Duplicate of the date permalink — kept out of the tab
                         order and the accessibility tree on purpose. */}
                     <Link
-                      href={(locale ? localizeUrl(getFlowUrl(flow.slug), locale) : getFlowUrl(flow.slug))}
+                      href={localizeUrl(getFlowUrl(flow.slug), loc)}
                       tabIndex={-1}
                       aria-hidden="true"
                       className="shrink-0 no-underline text-base leading-none text-muted/40 hover:text-accent transition-colors"
@@ -102,7 +105,7 @@ export default function FlowStream({ flows, slugRegistry, pagination, locale }: 
                   {flow.title !== flow.date && (
                     <h3 className="mt-2 text-xl font-serif font-bold text-heading">
                       <Link
-                        href={(locale ? localizeUrl(getFlowUrl(flow.slug), locale) : getFlowUrl(flow.slug))}
+                        href={localizeUrl(getFlowUrl(flow.slug), loc)}
                         className="no-underline hover:text-accent transition-colors"
                       >
                         {flow.title}
