@@ -6,9 +6,7 @@ import { siteConfig } from '../../../site.config';
  * Content-tree filesystem access and filename conventions.
  * Tests read their committed fixture tree so production content remains clean.
  */
-const contentRootPath = process.env.NODE_ENV === 'test'
-  ? path.join(process.cwd(), 'tests', 'fixtures', 'content')
-  : path.join(process.cwd(), 'content');
+const contentRootPath = path.join(process.cwd(), 'content');
 
 export const contentDirectory = path.join(contentRootPath, 'posts');
 export const pagesDirectory = contentRootPath;
