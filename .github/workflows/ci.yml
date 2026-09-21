@@ -15,10 +15,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.11
+
       - run: bun install --frozen-lockfile
+
       - run: bun run lint
+
       - run: bun run typecheck
+
+      - name: Run test suite with fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            rm -rf content
+            mv content.__ci_backup content
+          }
+
+          trap cleanup EXIT
+
+          mv content content.__ci_backup
+          cp -a tests/fixtures/content content
+
+          bun run test
+
       - run: bun run build
