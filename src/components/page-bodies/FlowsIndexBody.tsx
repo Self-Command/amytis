@@ -1,25 +1,39 @@
 import { getAllFlows, getFlowTags } from '@/lib/content/flows';
 import { buildSlugRegistry } from '@/lib/content/discovery';
-import { firstPage } from '@/lib/pagination';
+import { isFeatureEnabled } from '@/lib/features';
+import { firstPage, paginate } from '@/lib/pagination';
 import { toFlowIndexItems } from '@/lib/flow-stream';
-import { localizeUrl } from '@/lib/urls';
+import { siteConfig } from '../../../site.config';
 import { notFound } from 'next/navigation';
+import { getTranslator } from '@/lib/i18n';
+import { localizeUrl } from '@/lib/urls';
 import FlowIndexClient from '@/components/FlowIndexClient';
 import FlowStream from '@/components/FlowStream';
 import PageHeader from '@/components/PageHeader';
-import { siteConfig } from '../../../site.config';
-
-const PAGE_SIZE = siteConfig.pagination.flows;
 
 interface FlowsIndexBodyProps {
   locale: string;
+  /** Page number (1-based). */
+  page?: number;
 }
 
-/** Shared body for the flows listing (`/flows` and locale-prefixed variants). */
-export default function FlowsIndexBody({ locale }: FlowsIndexBodyProps) {
+const PAGE_SIZE = siteConfig.pagination.flows;
+
+/**
+ * Shared body for the flow index (`/flows` and locale-prefixed variants, with
+ * optional pagination). Mirrors the unprefixed flows/page.tsx, evaluated
+ * against the given locale tree.
+ */
+export default function FlowsIndexBody({ locale, page = 1 }: FlowsIndexBodyProps) {
+  if (!isFeatureEnabled('flow')) notFound();
+  const { t } = getTranslator(locale);
+
   const allFlows = getAllFlows(locale);
-  const { items: flows, totalPages } = firstPage(allFlows, PAGE_SIZE);
+  const slice = page === 1 ? firstPage(allFlows, PAGE_SIZE) : paginate(allFlows, page, PAGE_SIZE);
+  if (!slice) notFound();
+  const { items: flows, totalPages } = slice;
   const slugRegistry = buildSlugRegistry(locale);
+
   const basePath = localizeUrl('/flows', locale);
 
   return (
@@ -38,8 +52,8 @@ export default function FlowsIndexBody({ locale }: FlowsIndexBodyProps) {
           <FlowStream
             flows={flows}
             slugRegistry={slugRegistry}
-            pagination={totalPages > 1 ? { currentPage: 1, totalPages, basePath } : undefined}
             locale={locale}
+            pagination={totalPages > 1 ? { currentPage: page, totalPages, basePath } : undefined}
           />
         }
       />
