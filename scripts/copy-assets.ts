@@ -443,6 +443,37 @@ function processFlows() {
   }
 }
 
+// Process locale flow assets — same structure as processFlows but with configurable source dir
+function processFlowsForLocale(srcDir: string, destDir: string) {
+  if (!fs.existsSync(srcDir)) return;
+
+  const yearDirs = fs.readdirSync(srcDir, { withFileTypes: true });
+  for (const yearEntry of yearDirs) {
+    if (!yearEntry.isDirectory() || !/^\d{4}$/.test(yearEntry.name)) continue;
+    const yearPath = path.join(srcDir, yearEntry.name);
+
+    const monthDirs = fs.readdirSync(yearPath, { withFileTypes: true });
+    for (const monthEntry of monthDirs) {
+      if (!monthEntry.isDirectory() || !/^\d{2}$/.test(monthEntry.name)) continue;
+      const monthPath = path.join(yearPath, monthEntry.name);
+
+      const dayItems = fs.readdirSync(monthPath, { withFileTypes: true });
+      for (const dayItem of dayItems) {
+        if (!dayItem.isDirectory()) continue;
+        const rawName = dayItem.name;
+        if (!/^\d{2}$/.test(rawName)) continue;
+
+        const srcFlowDir = path.join(monthPath, rawName);
+        const destFlowDir = path.join(destDir, yearEntry.name, monthEntry.name, rawName);
+
+        console.log(`Processing Locale Flow: ${yearEntry.name}/${monthEntry.name}/${rawName}`);
+        markGeneratedDestination(destFlowDir);
+        syncRecursive(srcFlowDir, destFlowDir);
+      }
+    }
+  }
+}
+
 // Exported for unit tests (the collision guard is pure). Clears the claim map
 // so tests start from a known state.
 export function resetAssetClaims() {
@@ -477,6 +508,11 @@ if (import.meta.main) {
     processPosts(path.join(contentRoot, 'posts'), localePostsDest, `content/${locale}/posts`);
     processSeries(path.join(contentRoot, 'series'), localePostsDest, `content/${locale}/series`);
     processBooks(path.join(contentRoot, 'books'), localeBooksDest);
+    // Process locale flow assets
+    const localeFlowsDest = path.join(publicRoot, 'flows');
+    if (fs.existsSync(path.join(contentRoot, 'flows'))) {
+      processFlowsForLocale(path.join(contentRoot, 'flows'), localeFlowsDest);
+    }
     pruneOrphanedOptimizerDirs(publicRoot);
   }
   console.log('Assets copied successfully.');
