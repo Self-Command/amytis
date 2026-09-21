@@ -212,10 +212,13 @@ export function getFlowTags(locale?: string): Record<string, number> {
 
 /** Locales whose tree holds at least one flow (default first). */
 export function getFlowContentLocales(flowSlug: string): string[] {
-  const locales = [siteConfig.i18n.defaultLocale];
-  if (siteConfig.i18n.enabled) {
-    for (const locale of siteConfig.i18n.locales) {
-      if (locale === siteConfig.i18n.defaultLocale) continue;
+  const locales: string[] = [];
+  const { defaultLocale, locales: configuredLocales, enabled } = siteConfig.i18n;
+  // Only add default locale if the flow actually exists there
+  if (getFlowBySlug(flowSlug, defaultLocale)) locales.push(defaultLocale);
+  if (enabled) {
+    for (const locale of configuredLocales) {
+      if (locale === defaultLocale) continue;
       if (getFlowBySlug(flowSlug, locale)) locales.push(locale);
     }
   }
