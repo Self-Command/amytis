@@ -210,7 +210,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
         priority: 0.8,
       });
     }
-    if (flowEnabled && hasLocaleContent(locale, 'notes')) {
+    if (flowEnabled && hasLocaleContent(locale, 'flows')) {
+      entries.push({
+        url: `${baseUrl}${localizeUrl('/flows', locale)}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.8,
+      });
+    }
+        if (flowEnabled && hasLocaleContent(locale, 'notes')) {
       entries.push({
         url: `${baseUrl}${localizeUrl('/notes', locale)}`,
         lastModified: new Date(),
@@ -285,6 +293,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
             ...languagesFor(getBookChapterUrl(book.slug, ch.id), chapterContentLocales(book.slug, ch.id)),
           });
         }
+      }
+    }
+
+    // Flows of the locale tree.
+    if (flowEnabled) {
+      for (const flow of getAllFlows(locale)) {
+        entries.push({
+          url: `${baseUrl}${localizeUrl(`/flows/${flow.slug}`, locale)}`,
+          lastModified: flow.date,
+          changeFrequency: 'monthly',
+          priority: 0.5,
+        });
       }
     }
 
