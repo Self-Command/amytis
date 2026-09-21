@@ -113,20 +113,40 @@ export function getFeedItems(feedType: FeedType = 'main', includeFullContent: bo
     };
   });
 
-  const getFlowEntries = (): FeedEntry[] => getAllFlows().map((flow) => {
-    const url = withTrailingSlash(`${baseUrl}${getFlowUrl(flow.slug)}`);
-    return {
-      item: {
-        title: flow.title,
-        url,
-        date: new Date(flow.date),
-        excerpt: flow.excerpt,
-        content: '',
-        tags: flow.tags || [],
-      },
-      source: flow,
-    };
-  });
+  const getFlowEntries = (): FeedEntry[] => {
+    const entries: FeedEntry[] = getAllFlows().map((flow) => {
+      const url = withTrailingSlash(`${baseUrl}${getFlowUrl(flow.slug)}`);
+      return {
+        item: {
+          title: flow.title,
+          url,
+          date: new Date(flow.date),
+          excerpt: flow.excerpt,
+          content: '',
+          tags: flow.tags || [],
+        },
+        source: flow,
+      };
+    });
+    // Include locale tree flows
+    for (const locale of getNonDefaultLocales()) {
+      for (const flow of getAllFlows(locale)) {
+        const url = withTrailingSlash(`${baseUrl}${localizeUrl(getFlowUrl(flow.slug), locale)}`);
+        entries.push({
+          item: {
+            title: flow.title,
+            url,
+            date: new Date(flow.date),
+            excerpt: flow.excerpt,
+            content: '',
+            tags: flow.tags || [],
+          },
+          source: flow,
+        });
+      }
+    }
+    return entries;
+  };
 
   let entries: FeedEntry[];
   if (feedType === 'posts') {
