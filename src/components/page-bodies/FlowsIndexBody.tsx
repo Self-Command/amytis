@@ -39,6 +39,7 @@ export default function FlowsIndexBody({ locale }: FlowsIndexBodyProps) {
             flows={flows}
             slugRegistry={slugRegistry}
             pagination={totalPages > 1 ? { currentPage: 1, totalPages, basePath } : undefined}
+            locale={locale}
           />
         }
       />
