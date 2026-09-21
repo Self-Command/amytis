@@ -15,6 +15,7 @@ import SeriesPrefixListingBody from '@/components/page-bodies/SeriesPrefixListin
 import SeriesIndexBody from '@/components/page-bodies/SeriesIndexBody';
 import BooksIndexBody from '@/components/page-bodies/BooksIndexBody';
 import NotesIndexBody from '@/components/page-bodies/NotesIndexBody';
+import FlowsIndexBody from '@/components/page-bodies/FlowsIndexBody';
 import { prefixedPostParams, resolvePrefixedPost } from '@/lib/route-aliases';
 import { contentSeoUrls, localeSecondLevelParams, resolveLocalizedPath, type LocalizedResolution } from '@/lib/locale-routes';
 import { safeDecodeParam } from '@/lib/route-params';
