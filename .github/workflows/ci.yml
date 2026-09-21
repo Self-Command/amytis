@@ -26,21 +26,112 @@ jobs:
 
       - run: bun run typecheck
 
-      - name: Run test suite with fixtures
+      - name: Run tests against locale fixtures
         shell: bash
         run: |
           set -euo pipefail
 
+          CONTENT_BACKUP="content.__ci_backup"
+          CONFIG_BACKUP="site.config.ts.__ci_backup"
+
           cleanup() {
-            rm -rf content
-            mv content.__ci_backup content
+            if [[ -f "$CONFIG_BACKUP" ]]; then
+              rm -f site.config.ts
+              mv "$CONFIG_BACKUP" site.config.ts
+            fi
+
+            if [[ -d "$CONTENT_BACKUP" ]]; then
+              rm -rf content
+              mv "$CONTENT_BACKUP" content
+            fi
           }
 
           trap cleanup EXIT
 
-          mv content content.__ci_backup
+          # Replace production content with test fixtures.
+          if [[ ! -d content ]]; then
+            echo "content/ does not exist"
+            exit 1
+          fi
+
+          if [[ -e "$CONTENT_BACKUP" ]]; then
+            echo "$CONTENT_BACKUP already exists"
+            exit 1
+          fi
+
+          mv content "$CONTENT_BACKUP"
           cp -a tests/fixtures/content content
 
-          bun run test
+          # --------------------------------------------------------
+          # A. Unit / tooling tests use the real production config:
+          #    defaultLocale = zh
+          # --------------------------------------------------------
+
+          bun test src tests/unit tests/tooling packages/create-amytis/src
+
+          # --------------------------------------------------------
+          # B. Legacy integration suite was authored against an
+          #    English-default content tree.
+          #
+          #    Run it with defaultLocale = en temporarily.
+          # --------------------------------------------------------
+
+          if [[ -e "$CONFIG_BACKUP" ]]; then
+            echo "$CONFIG_BACKUP already exists"
+            exit 1
+          fi
+
+          cp site.config.ts "$CONFIG_BACKUP"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("site.config.ts")
+          text = path.read_text(encoding="utf-8")
+
+          old = "defaultLocale: 'zh'"
+          new = "defaultLocale: 'en'"
+
+          count = text.count(old)
+
+          if count != 1:
+              raise SystemExit(
+                  f"expected exactly one defaultLocale zh declaration, found {count}"
+              )
+
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+
+          mapfile -t INTEGRATION_TESTS < <(
+            find tests/integration \
+              -type f \
+              \( -name '*.test.ts' -o -name '*.test.tsx' \) \
+              ! -name 'locale-trees.test.ts' \
+              | sort
+          )
+
+          if (( ${#INTEGRATION_TESTS[@]} == 0 )); then
+            echo "No integration test files found"
+            exit 1
+          fi
+
+          bun test "${INTEGRATION_TESTS[@]}"
+
+          # --------------------------------------------------------
+          # C. Restore production zh config.
+          #    locale-trees explicitly verifies zh-default semantics.
+          # --------------------------------------------------------
+
+          rm -f site.config.ts
+          mv "$CONFIG_BACKUP" site.config.ts
+
+          bun test tests/integration/locale-trees.test.ts
+
+          # --------------------------------------------------------
+          # D. DOM tests under the real production config: zh default
+          # --------------------------------------------------------
+
+          bun run test:dom
 
       - run: bun run build
