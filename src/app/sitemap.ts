@@ -299,11 +299,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Flows of the locale tree.
     if (flowEnabled) {
       for (const flow of getAllFlows(locale)) {
+        const flowUrl = localizeUrl(`/flows/${flow.slug}`, locale);
         entries.push({
-          url: `${baseUrl}${localizeUrl(`/flows/${flow.slug}`, locale)}`,
+          url: `${baseUrl}${flowUrl}`,
           lastModified: flow.date,
           changeFrequency: 'monthly',
           priority: 0.5,
+          ...languagesFor(flowUrl, getFlowContentLocales(flow.slug)),
         });
       }
     }
