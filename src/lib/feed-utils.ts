@@ -1,5 +1,5 @@
 import { getPostsWithLocaleOriginals } from './content/posts';
-import { getAllFlows, getFlowsWithLocaleOriginals } from './content/flows';
+import { getFlowsWithLocaleOriginals } from './content/flows';
 import { buildSlugRegistry, type SlugRegistryEntry } from './content/discovery';
 import { siteConfig } from '../../site.config';
 import { getPostUrl, getFlowUrl, withTrailingSlash, localizeUrl } from './urls';
