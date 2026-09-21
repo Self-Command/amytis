@@ -155,7 +155,7 @@ export function resolveLocalizedPath(locale: string, segments: string[]): Locali
       return hasLocaleContent(locale, 'flows') ? { kind: 'flowsListing', locale } : null;
     }
     return null;
-  }}
+  }
 
   if (first === 'notes') {
       return hasLocaleContent(locale, 'notes') ? { kind: 'notesListing', locale, page: 1 } : null;
