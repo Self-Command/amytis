@@ -113,7 +113,7 @@ function computeTreeRegistry(locale: string): Map<string, SlugRegistryEntry> {
       map.set(p.slug, { url, type: 'post', title: p.title });
     });
 
-    // Flows have no locale trees (deferred) — only the default registry sees them.
+    // Flows — default locale first, then locale trees.
     if (locale === DEFAULT_LOCALE) {
       getAllFlows().forEach(f => {
         const existing = map.get(f.slug);
@@ -127,6 +127,20 @@ function computeTreeRegistry(locale: string): Map<string, SlugRegistryEntry> {
         }
         map.set(f.slug, { url: getFlowUrl(f.slug), type: 'flow', title: f.title });
       });
+
+      // Locale tree flows
+      for (const locale of getNonDefaultLocales()) {
+        getAllFlows(locale).forEach(f => {
+          const existing = map.get(f.slug);
+          if (existing) {
+            throw new Error(
+              `[amytis] Flow slug "${f.slug}" collides with an existing ${existing.type} of the same slug. ` +
+              `Slugs must be unique across posts, flows, notes, and series so wikilinks resolve unambiguously.`
+            );
+          }
+          map.set(f.slug, { url: localizeUrl(getFlowUrl(f.slug), locale), type: 'flow', title: f.title });
+        });
+      }
     }
 
     getAllNotes(locale).forEach(n => {
