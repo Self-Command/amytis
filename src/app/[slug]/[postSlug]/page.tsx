@@ -66,10 +66,10 @@ function localizedMetadata(locale: string, resolution: LocalizedResolution): Met
         locale, titleKey: 'books', descriptionKey: 'books_subtitle',
         descriptionOneKey: 'books_subtitle_one', count: getAllBooks(locale).length,
       });
-    case 'flowsListing':
-      return createListingMetadata({ locale, titleKey: 'flows', description: 'Daily flows and short-form posts.' });
-        case 'notesListing':
+    case 'notesListing':
       return createListingMetadata({ locale, titleKey: 'notes', description: 'Knowledge base notes.' });
+    case 'flowsListing':
+      return createListingMetadata({ locale, titleKey: 'flow', description: 'Daily notes and quick thoughts.' });
     case 'seriesPrefixListing': {
       const seriesData = getSeriesData(resolution.seriesSlug, locale);
       if (!seriesData) return { title: 'Page Not Found' };
@@ -118,10 +118,10 @@ function LocalizedSecondLevel({ locale, resolution }: { locale: string; resoluti
       return <SeriesIndexBody locale={locale} />;
     case 'booksListing':
       return <BooksIndexBody locale={locale} />;
-    case 'flowsListing':
-      return <FlowsIndexBody locale={locale} />;
-        case 'notesListing':
+    case 'notesListing':
       return <NotesIndexBody locale={locale} page={resolution.page} />;
+    case 'flowsListing':
+      return <FlowsIndexBody locale={locale} page={resolution.page} />;
     case 'seriesPrefixListing':
       return (
         <SeriesPrefixListingBody
