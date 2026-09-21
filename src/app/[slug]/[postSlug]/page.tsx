@@ -65,7 +65,9 @@ function localizedMetadata(locale: string, resolution: LocalizedResolution): Met
         locale, titleKey: 'books', descriptionKey: 'books_subtitle',
         descriptionOneKey: 'books_subtitle_one', count: getAllBooks(locale).length,
       });
-    case 'notesListing':
+    case 'flowsListing':
+      return createListingMetadata({ locale, titleKey: 'flows', description: 'Daily flows and short-form posts.' });
+        case 'notesListing':
       return createListingMetadata({ locale, titleKey: 'notes', description: 'Knowledge base notes.' });
     case 'seriesPrefixListing': {
       const seriesData = getSeriesData(resolution.seriesSlug, locale);
@@ -115,7 +117,9 @@ function LocalizedSecondLevel({ locale, resolution }: { locale: string; resoluti
       return <SeriesIndexBody locale={locale} />;
     case 'booksListing':
       return <BooksIndexBody locale={locale} />;
-    case 'notesListing':
+    case 'flowsListing':
+      return <FlowsIndexBody locale={locale} />;
+        case 'notesListing':
       return <NotesIndexBody locale={locale} page={resolution.page} />;
     case 'seriesPrefixListing':
       return (
