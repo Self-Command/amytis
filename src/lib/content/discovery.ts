@@ -5,7 +5,7 @@ import { isFeatureEnabled } from '../features';
 import { domainDir } from './io';
 import { createMemo, createProdKeyedMemo } from './cache';
 import { getAllPosts, getPostsWithLocaleOriginals } from './posts';
-import { getAllFlows } from './flows';
+import { getAllFlows, getFlowsWithLocaleOriginals } from './flows';
 import { getAllNotes, getNotesWithLocaleOriginals } from './notes';
 import { getSeriesData } from './series';
 
@@ -23,7 +23,7 @@ const allTagsMemo = createMemo<Record<string, number>>();
 export function getAllTags(): Record<string, number> {
   return allTagsMemo.get(() => {
     const allPosts = getPostsWithLocaleOriginals();
-    const allFlows = getAllFlows();
+    const allFlows = getFlowsWithLocaleOriginals();
     const allNotes = getNotesWithLocaleOriginals();
 
     // counts keyed by lowercase for deduplication; display preserves first-seen casing
@@ -113,25 +113,7 @@ function computeTreeRegistry(locale: string): Map<string, SlugRegistryEntry> {
       map.set(p.slug, { url, type: 'post', title: p.title });
     });
 
-    // Flows — default locale first, then locale trees.
-    if (locale === DEFAULT_LOCALE) {
-      getAllFlows().forEach(f => {
-        const existing = map.get(f.slug);
-        if (existing) {
-          // Reachable via a day with both DD.md and DD/index.md — the walk
-          // yields two flows with the same date slug.
-          throw new Error(
-            `[amytis] Flow slug "${f.slug}" collides with an existing ${existing.type} of the same slug. ` +
-            `Slugs must be unique across posts, flows, notes, and series so wikilinks resolve unambiguously.`
-          );
-        }
-        map.set(f.slug, { url: getFlowUrl(f.slug), type: 'flow', title: f.title });
-      });
-
-
-    }
-
-    // Locale tree flows.
+    // Flows register for every locale tree (the deferred-flows restriction is lifted).
     getAllFlows(locale).forEach(f => {
       const existing = map.get(f.slug);
       if (existing) {
@@ -143,7 +125,7 @@ function computeTreeRegistry(locale: string): Map<string, SlugRegistryEntry> {
       map.set(f.slug, { url: localizeUrl(getFlowUrl(f.slug), locale), type: 'flow', title: f.title });
     });
 
-        getAllNotes(locale).forEach(n => {
+    getAllNotes(locale).forEach(n => {
       // Slugs and aliases must be unique across all content so a wikilink
       // [[target]] resolves unambiguously. A collision is a build-time error,
       // not a silent overwrite (strict-build invariant).
