@@ -2,7 +2,7 @@ import { getPostsWithLocaleOriginals } from './content/posts';
 import { getAllFlows } from './content/flows';
 import { buildSlugRegistry, type SlugRegistryEntry } from './content/discovery';
 import { siteConfig } from '../../site.config';
-import { getPostUrl, getFlowUrl, withTrailingSlash } from './urls';
+import { getPostUrl, getFlowUrl, getNonDefaultLocales, localizeUrl, withTrailingSlash } from './urls';
 import { resolveLocaleValue } from './i18n';
 import { markdownToHtml } from './markdown-to-html';
 import { sanitizeRenderedRstHtml } from './rst-sanitize';
