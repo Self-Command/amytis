@@ -5,7 +5,7 @@ import Pagination from '@/components/Pagination';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import MetaDot from '@/components/ui/MetaDot';
 import { groupFlowsByMonth, flowStreamLocaleTag } from '@/lib/flow-stream';
-import { getFlowUrl } from '@/lib/urls';
+import { getFlowUrl, localizeUrl } from '@/lib/urls';
 import type { FlowData } from '@/lib/content/flows';
 import type { SlugRegistryEntry } from '@/lib/content/discovery';
 
@@ -17,6 +17,7 @@ interface FlowStreamProps {
     totalPages: number;
     basePath: string;
   };
+  locale?: string;
 }
 
 /**
@@ -24,7 +25,7 @@ interface FlowStreamProps {
  * Server component — markdown renders at build time through the same
  * pipeline as the flow detail page. Column width comes from the parent.
  */
-export default function FlowStream({ flows, slugRegistry, pagination }: FlowStreamProps) {
+export default function FlowStream({ flows, slugRegistry, pagination, locale }: FlowStreamProps) {
   const groups = groupFlowsByMonth(flows);
   const weekdayFmt = new Intl.DateTimeFormat(flowStreamLocaleTag(), {
     weekday: 'long',
@@ -76,7 +77,7 @@ export default function FlowStream({ flows, slugRegistry, pagination }: FlowStre
               <article key={flow.slug} className="flow-card">
                 <header className="mb-4">
                   <div className="flex items-baseline justify-between gap-4">
-                    <Link href={getFlowUrl(flow.slug)} className="group/date no-underline min-w-0">
+                    <Link href={(locale ? localizeUrl(getFlowUrl(flow.slug), locale) : getFlowUrl(flow.slug))} className="group/date no-underline min-w-0">
                       <time
                         dateTime={flow.date}
                         className="text-sm font-mono text-accent group-hover/date:text-accent-hover transition-colors"
@@ -90,7 +91,7 @@ export default function FlowStream({ flows, slugRegistry, pagination }: FlowStre
                     {/* Duplicate of the date permalink — kept out of the tab
                         order and the accessibility tree on purpose. */}
                     <Link
-                      href={getFlowUrl(flow.slug)}
+                      href={(locale ? localizeUrl(getFlowUrl(flow.slug), locale) : getFlowUrl(flow.slug))}
                       tabIndex={-1}
                       aria-hidden="true"
                       className="shrink-0 no-underline text-base leading-none text-muted/40 hover:text-accent transition-colors"
@@ -101,7 +102,7 @@ export default function FlowStream({ flows, slugRegistry, pagination }: FlowStre
                   {flow.title !== flow.date && (
                     <h3 className="mt-2 text-xl font-serif font-bold text-heading">
                       <Link
-                        href={getFlowUrl(flow.slug)}
+                        href={(locale ? localizeUrl(getFlowUrl(flow.slug), locale) : getFlowUrl(flow.slug))}
                         className="no-underline hover:text-accent transition-colors"
                       >
                         {flow.title}
