@@ -119,7 +119,7 @@ export function validateLocaleTreeEntry(locale: string, entryName: string): void
       `[amytis] Nested locale directory content/${locale}/${entryName}/ is invalid — locale trees cannot nest.`
     );
   }
-}}
+}
 
 let activeLocalesCache: string[] | null = null;
 
