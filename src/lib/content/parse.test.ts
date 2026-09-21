@@ -93,10 +93,12 @@ describe("content/parse", () => {
     resetPythonRstRendererAvailabilityForTests();
 
     const post = parseRstFileForTests(
-      path.join(process.cwd(), "content/series/rst-legacy/getting-started.rst"),
+      path.join(process.cwd(), "content/en/series/rst-legacy/getting-started.rst"),
       "getting-started",
       undefined,
       "rst-legacy",
+      undefined,
+      "en",
     );
 
     expect(post.title).toBe("Getting Started With rST");

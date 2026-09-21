@@ -185,18 +185,18 @@ export function patchSiteConfig(projectDir: string, title: string, description: 
 
   let src = fs.readFileSync(configPath, "utf8");
 
-  // title: { en: "...", zh: "..." }
+  // title: { en: "...", zh: "..." } or single-quoted equivalents
   src = mustReplace(
     src,
-    /title:\s*\{\s*en:\s*"[^"]*",\s*zh:\s*"[^"]*"\s*\}/,
+    /title:\s*\{\s*en:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*,\s*zh:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\}/,
     `title: { en: ${JSON.stringify(title)}, zh: ${JSON.stringify(title)} }`,
     "title"
   );
 
-  // description: { en: "...", zh: "..." }
+  // description: { en: "...", zh: "..." } or single-quoted equivalents
   src = mustReplace(
     src,
-    /description:\s*\{\s*en:\s*"[^"]*",\s*zh:\s*"[^"]*"\s*\}/,
+    /description:\s*\{\s*en:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*,\s*zh:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\}/,
     `description: { en: ${JSON.stringify(description)}, zh: ${JSON.stringify(description)} }`,
     "description"
   );

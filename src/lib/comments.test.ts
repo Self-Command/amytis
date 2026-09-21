@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { resolveCommentable } from './comments';
+import { siteConfig } from '../../site.config';
 
 describe('resolveCommentable', () => {
   describe('frontmatter override', () => {
@@ -28,23 +29,23 @@ describe('resolveCommentable', () => {
 
   describe('site config category defaults (no frontmatter)', () => {
     test('posts default is true', () => {
-      expect(resolveCommentable(undefined, 'posts')).toBe(true);
+      expect(resolveCommentable(undefined, 'posts')).toBe(siteConfig.comments.commentable.posts);
     });
 
     test('flows default is true', () => {
-      expect(resolveCommentable(undefined, 'flows')).toBe(true);
+      expect(resolveCommentable(undefined, 'flows')).toBe(siteConfig.comments.commentable.flows);
     });
 
     test('notes default is true', () => {
-      expect(resolveCommentable(undefined, 'notes')).toBe(true);
+      expect(resolveCommentable(undefined, 'notes')).toBe(siteConfig.comments.commentable.notes);
     });
 
     test('bookChapters default is true', () => {
-      expect(resolveCommentable(undefined, 'bookChapters')).toBe(true);
+      expect(resolveCommentable(undefined, 'bookChapters')).toBe(siteConfig.comments.commentable.bookChapters);
     });
 
     test('staticPages default is false', () => {
-      expect(resolveCommentable(undefined, 'staticPages')).toBe(false);
+      expect(resolveCommentable(undefined, 'staticPages')).toBe(siteConfig.comments.commentable.staticPages);
     });
   });
 });
