@@ -1,0 +1,194 @@
+---
+title: "The Kitchen Sink: Comprehensive Feature Test"
+date: "2026-01-21"
+excerpt: "A complete showcase of all markdown features, code highlighting, diagrams, math, and layout capabilities supported by Amytis."
+category: "Showcase"
+tags: ["features", "test", "demo"]
+authors: ["Amytis Team", "Tester"]
+layout: "post"
+latex: true
+toc: true
+---
+
+# Heading Level 1
+
+This is a paragraph under H1. **Bold text**, *italic text*, and ~~strikethrough~~.
+
+## Heading Level 2
+
+Here is a blockquote:
+
+> "The digital garden is not just a collection of posts, but a web of interconnected thoughts."
+> 
+> — Unknown Gardener
+
+### Heading Level 3
+
+#### Heading Level 4
+
+##### Heading Level 5
+
+###### Heading Level 6
+
+---
+
+## Lists
+
+### Unordered
+- Item 1
+- Item 2
+  - Nested Item 2.1
+  - Nested Item 2.2
+- Item 3
+
+### Ordered
+1. Step One
+2. Step Two
+3. Step Three
+
+### Task List
+- [x] Implement Markdown
+- [x] Add Syntax Highlighting
+- [ ] Write Documentation
+
+---
+
+## Code
+
+### Inline
+The `useState` hook is essential. You can install via `bun install`.
+
+### Code Blocks
+
+**TypeScript:**
+```typescript
+interface User {
+  id: number;
+  name: string;
+}
+
+function getUser(id: number): User {
+  return { id, name: "Alice" };
+}
+```
+
+**Bash:**
+```bash
+echo "Hello World" > hello.txt
+ls -la
+```
+
+**JSON:**
+```json
+{
+  "project": "Amytis",
+  "version": "1.4.0"
+}
+```
+
+---
+
+## Math (LaTeX)
+
+Inline math: $E = mc^2$ and $e^{iπ} + 1 = 0$. 
+
+Block math:
+
+$$
+\frac{1}{\sigma\sqrt{2\pi}} \exp\left( -\frac{1}{2} \left( \frac{x-\mu}{\sigma} \right)^2 \right)
+$$
+
+---
+
+## Diagrams (Mermaid)
+
+### Flowchart
+```mermaid
+flowchart LR
+    A[Start] --> B{Is it working?}
+    B -- Yes --> C[Great!]
+    B -- No --> D[Debug]
+    D --> B
+```
+
+### Sequence Diagram
+```mermaid
+sequenceDiagram
+    Alice->>John: Hello John, how are you?
+    John-->>Alice: Great!
+```
+
+---
+
+## Images
+
+### Standard Markdown
+![Test SVG](./assets/test.svg)
+
+### Raw HTML (Quoted)
+<img src="./assets/test.svg" width="100" alt="Small HTML Image" style="border: 2px solid #ccc; border-radius: 8px;" />
+
+### Photos from Public Directory
+
+![Antelope Canyon](/images/antelope-canyon.jpg)
+
+![Mountain Landscape](/images/mountains.jpg)
+
+![Lake View](/images/lake.jpg)
+
+![Flowers](/images/flowers.jpg)
+
+![Cappadocia](/images/cappadocia.jpg)
+
+![Galaxy](/images/galaxy.jpg)
+
+### Vibrant Waves (JPG format)
+
+![Vibrant Waves](/images/vibrant-waves.jpg)
+
+### Side by Side (Raw HTML)
+
+<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+  <img src="/images/antelope-canyon.jpg" alt="Antelope Canyon" style="width: 48%; border-radius: 8px;" />
+  <img src="/images/cappadocia.jpg" alt="Cappadocia" style="width: 48%; border-radius: 8px;" />
+</div>
+
+---
+
+## Tables
+
+| Feature | Status | Notes |
+| :--- | :---: | :--- |
+| **GFM** | ✅ | Tables supported |
+| **Math** | ✅ | KaTeX integration |
+| **Mermaid** | ✅ | Native rendering |
+
+---
+
+## Links
+
+- [Internal Link to Home](/)
+- [External Link (Google)](https://google.com)
+- [Reference Link][repo]
+
+[repo]: https://github.com/vercel/next.js
+
+---
+
+## HTML Components
+
+<details>
+  <summary>Click to expand secret info</summary>
+  <div style="padding: 1rem; background: #f0fdf4; border-radius: 0.5rem; color: #166534;">
+    This content is inside a raw HTML <code>details</code> tag with inline styles.
+  </div>
+</details>
+
+---
+
+## Footnotes
+
+Here is a footnote reference[^1]. And another one[^note2].
+
+[^1]: This is the first footnote text.
+[^note2]: This is a second footnote with **bold** text.

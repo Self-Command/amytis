@@ -1,0 +1,31 @@
+---
+title: Visuals and Diagrams
+date: '2026-02-13'
+category: Design
+tags:
+  - visuals
+  - mermaid
+redirectFrom:
+  - /posts/visuals-and-diagrams
+---
+
+Visualizing information is key to understanding. Amytis integrates Mermaid.js for diagrams and handles images with ease.
+
+## Mermaid Diagrams
+
+You can write diagrams directly in your markdown:
+
+```mermaid
+graph TD
+    A[Idea] --> B{Is it good?}
+    B -- Yes --> C[Plant it]
+    B -- No --> D[Discard]
+    C --> E[Grow]
+    E --> F[Evergreen]
+```
+
+## Images
+
+Standard markdown images are supported, including relative paths:
+
+![Digital Garden](https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1200&q=80)

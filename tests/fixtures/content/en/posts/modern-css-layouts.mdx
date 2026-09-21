@@ -1,0 +1,45 @@
+---
+title: "Modern CSS Layouts"
+date: "2026-01-03"
+category: "Design"
+tags: ["css", "frontend", "layout"]
+author: "UI Designer"
+---
+
+CSS has come a long way. Today we primarily use Grid and Flexbox.
+
+## Flexbox
+
+Best for **1-dimensional** layouts (rows OR columns).
+
+```css
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+```
+
+## CSS Grid
+
+Best for **2-dimensional** layouts (rows AND columns).
+
+```css
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+```
+
+## Decision Tree
+
+```mermaid
+graph TD
+    A[Start Layout] --> B{One Direction?}
+    B -- Yes --> C[Use Flexbox]
+    B -- No --> D{Two Directions?}
+    D -- Yes --> E[Use CSS Grid]
+    C --> F[Align Content]
+    E --> F
+```

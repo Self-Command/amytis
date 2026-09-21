@@ -1,0 +1,36 @@
+---
+title: Mathematical Notation
+date: '2026-02-14'
+category: Science
+tags:
+  - math
+  - latex
+latex: true
+redirectFrom:
+  - /posts/mathematical-notation-demo
+---
+
+Amytis uses `rehype-katex` to render beautiful mathematical formulas.
+
+## Inline Math
+
+The Pythagorean theorem is $a^2 + b^2 = c^2$. We can also express complex numbers like $e^{i\pi} + 1 = 0$.
+
+## Block Math
+
+For more complex equations, use block math:
+
+$$
+I = \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+
+Or Maxwell's equations:
+
+$$
+\begin{aligned}
+\nabla \cdot \mathbf{E} &= \frac{\rho}{\varepsilon_0} \\
+\nabla \cdot \mathbf{B} &= 0 \\
+\nabla \times \mathbf{E} &= -\frac{\partial \mathbf{B}}{\partial t} \\
+\nabla \times \mathbf{B} &= \mu_0\left(\mathbf{J} + \varepsilon_0 \frac{\partial \mathbf{E}}{\partial t}\right)
+\end{aligned}
+$$

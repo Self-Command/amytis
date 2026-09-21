@@ -1,0 +1,49 @@
+---
+title: "Understanding React Hooks"
+date: "2025-12-28"
+excerpt: "A deep dive into useState and useEffect with visual diagrams."
+category: "Engineering"
+tags: ["react", "hooks", "frontend"]
+author: "Code Gardener"
+featured: true
+coverImage: "/images/antelope-canyon.jpg"
+---
+
+React Hooks revolutionized how we write components. Let's explore the core hooks.
+
+## The State Hook: useState
+
+The `useState` hook allows you to add state to function components.
+
+```tsx
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+```
+
+## The Effect Hook: useEffect
+
+`useEffect` handles side effects like data fetching or subscriptions.
+
+### Dependency Array Logic
+
+```mermaid
+flowchart TD
+    A["Component Renders"] --> B{"Has Dependencies?"}
+    B -- No --> C["Run Effect Every Render"]
+    B -- Yes --> D{"Did Deps Change?"}
+    D -- Yes --> E["Run Effect"]
+    D -- No --> F["Skip Effect"]
+    E --> G["Run Cleanup (if exists)"]
+```

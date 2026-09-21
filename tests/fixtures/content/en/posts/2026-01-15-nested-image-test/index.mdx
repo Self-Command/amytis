@@ -1,0 +1,27 @@
+---
+title: "Nested Image Test"
+date: "2026-01-15"
+excerpt: "Testing nested images in a dedicated 'images' subdirectory."
+category: "Test"
+tags: ["images", "nested"]
+author: "Tester"
+---
+
+# Testing Nested Images
+
+This post demonstrates loading an image from an `./images/` subdirectory.
+
+![Test Image](./images/test.svg)
+
+## inline html pic
+**测试一下 (Quoted - Recommended):**
+<img src="./images/test.svg" width="100" style="display: inline-block;" alt="Quoted Image" />
+
+**测试一下 (Unquoted - Testing):**
+<img src=./images/test.svg width="100" style="display: inline-block;" alt="Unquoted Image" />
+
+**Simple Unquoted:**
+<img src=./images/test.svg />
+
+### Note on HTML Attributes
+HTML5 allows omitting quotes for simple values. This should work.

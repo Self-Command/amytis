@@ -1,0 +1,49 @@
+---
+title: "Asynchronous JavaScript"
+date: "2026-01-14"
+category: "Engineering"
+tags: ["javascript", "async", "programming"]
+author: "JS Ninja"
+---
+
+Handling asynchronous operations is critical in JavaScript.
+
+## The Evolution
+
+1. Callbacks (Callback Hell)
+2. Promises
+3. Async/Await
+
+## Code Comparison
+
+**Using Promises:**
+
+```javascript
+fetchData()
+  .then(data => process(data))
+  .catch(err => console.error(err));
+```
+
+**Using Async/Await:**
+
+```javascript
+async function getData() {
+  try {
+    const data = await fetchData();
+    return process(data);
+  } catch (err) {
+    console.error(err);
+  }
+}
+```
+
+## Promise State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending
+    Pending --> Fulfilled : resolve()
+    Pending --> Rejected : reject()
+    Fulfilled --> [*]
+    Rejected --> [*]
+```
