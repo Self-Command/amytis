@@ -32,81 +32,115 @@ const EN_ZH = { locales: ['en', 'zh'], defaultLocale: 'en', enabled: true };
 const ZH_DEFAULT = { locales: ['zh', 'en'], defaultLocale: 'zh', enabled: true };
 
 describe('locale content trees', () => {
-  test('getActiveContentLocales sees the zh tree', () => {
-    expect(getActiveContentLocales()).toEqual(['en', 'zh']);
+  test('getActiveContentLocales uses zh as default and en as secondary', () => {
+    expect(getActiveContentLocales()).toEqual(['zh', 'en']);
   });
 
-  test('zh tree posts are discovered with locale stamping and /zh/ URLs', () => {
-    const zhPosts = getAllPosts('zh');
+  test('default tree is zh and has no locale URL prefix', () => {
+    const zhPosts = getAllPosts();
     const slugs = zhPosts.map(p => p.slug);
-    expect(slugs).toContain('zh-original-demo');
+
     expect(slugs).toContain('i18n-routing-considerations');
-    expect(slugs).toContain('di-yi-pian');
+    expect(slugs).toContain('zh-original-demo');
+
     for (const post of zhPosts) {
       expect(post.locale).toBe('zh');
-      expect(getPostUrl(post).startsWith('/zh/')).toBe(true);
-    }
-  });
 
-  test('default-tree output is unchanged: no zh posts, no locale prefixes', () => {
-    const defaultPosts = getAllPosts();
-    expect(defaultPosts.map(p => p.slug)).not.toContain('zh-original-demo');
-    for (const post of defaultPosts) {
-      expect(post.locale).toBe('en');
       const url = getPostUrl(post);
+
       expect(url.startsWith('/zh/')).toBe(false);
       expect(url.startsWith('/en/')).toBe(false);
     }
   });
 
-  test('twins pair by treePath across trees', () => {
-    const enPost = getPostBySlug('i18n-routing-considerations');
-    expect(enPost).not.toBeNull();
-    expect(getPostContentLocales(enPost!)).toEqual(['en', 'zh']);
+  test('en tree is secondary and uses /en/ URLs', () => {
+    const enPosts = getAllPosts('en');
+    const slugs = enPosts.map(p => p.slug);
 
-    const twin = getTwinPost(enPost!, 'zh');
-    expect(twin).not.toBeNull();
-    expect(twin!.title).toBe('静态导出下的多语言路由考量');
-    expect(twin!.treePath).toBe(enPost!.treePath);
-    expect(getPostUrl(twin!)).toBe(`/zh${getPostUrl(enPost!)}`);
+    expect(slugs).toContain('i18n-routing-considerations');
+    expect(slugs).toContain('asynchronous-javascript');
+
+    for (const post of enPosts) {
+      expect(post.locale).toBe('en');
+
+      const url = getPostUrl(post);
+
+      expect(url.startsWith('/en/')).toBe(true);
+    }
   });
 
-  test('zh-originals have no default-tree twin and stand alone', () => {
-    const zhOriginal = getPostBySlug('zh-original-demo', 'zh');
+  test('twins pair by treePath across default zh and en trees', () => {
+    const zhPost = getPostBySlug('i18n-routing-considerations');
+
+    expect(zhPost).not.toBeNull();
+    expect(zhPost!.locale).toBe('zh');
+    expect(getPostContentLocales(zhPost!)).toEqual(['zh', 'en']);
+
+    const twin = getTwinPost(zhPost!, 'en');
+
+    expect(twin).not.toBeNull();
+    expect(twin!.locale).toBe('en');
+    expect(twin!.title).toBe(
+      'i18n in a Static Next.js Blog: Client-Side Toggle vs URL-Based Routing',
+    );
+    expect(twin!.treePath).toBe(zhPost!.treePath);
+    expect(getPostUrl(twin!)).toBe(`/en${getPostUrl(zhPost!)}`);
+  });
+
+  test('zh originals live in the default tree and have no en twin', () => {
+    const zhOriginal = getPostBySlug('zh-original-demo');
+
     expect(zhOriginal).not.toBeNull();
+    expect(zhOriginal!.locale).toBe('zh');
     expect(getPostContentLocales(zhOriginal!)).toEqual(['zh']);
     expect(getTwinPost(zhOriginal!, 'en')).toBeNull();
   });
 
-  test('zh series use the same series mechanics as the default tree', () => {
-    const zhSeries = getAllSeries('zh');
+  test('zh series live in the default tree and are absent from en', () => {
+    const zhSeries = getAllSeries();
+
     expect(Object.keys(zhSeries)).toContain('zh-demo-series');
     expect(zhSeries['zh-demo-series'].map(p => p.slug)).toEqual(['di-yi-pian']);
 
-    expect(getSeriesTitle('zh-demo-series', 'zh')).toBe('中文示例系列');
-    // Series inheritance flows into the child post from the zh index.
-    expect(zhSeries['zh-demo-series'][0].seriesTitle).toBe('中文示例系列');
+    expect(getSeriesTitle('zh-demo-series')).toBe('中文示例系列');
+    expect(
+      zhSeries['zh-demo-series'][0].seriesTitle,
+    ).toBe('中文示例系列');
 
-    // The zh-only series is invisible to the default tree.
-    expect(Object.keys(getAllSeries())).not.toContain('zh-demo-series');
-    expect(getSeriesTitle('zh-demo-series')).toBeUndefined();
+    const enSeries = getAllSeries('en');
+
+    expect(Object.keys(enSeries)).not.toContain('zh-demo-series');
+    expect(getSeriesTitle('zh-demo-series', 'en')).toBeUndefined();
   });
 
-  test('zh pages migrated from sibling files are tree pages with twins', () => {
-    const zhPageSlugs = getAllPages('zh').map(p => p.slug).sort();
+  test('default zh pages and secondary en pages are both discoverable', () => {
+    const zhPageSlugs = getAllPages()
+      .map(p => p.slug)
+      .sort();
+
     expect(zhPageSlugs).toEqual(['about', 'links', 'privacy']);
-    for (const page of getAllPages('zh')) {
+
+    for (const page of getAllPages()) {
       expect(page.locale).toBe('zh');
-      // Every migrated page twins its default-tree counterpart by treePath.
-      expect(getAllPages().some(p => p.treePath === page.treePath)).toBe(true);
+    }
+
+    const enPageSlugs = getAllPages('en')
+      .map(p => p.slug)
+      .sort();
+
+    expect(enPageSlugs).toEqual(['about']);
+
+    for (const page of getAllPages('en')) {
+      expect(page.locale).toBe('en');
     }
   });
 
-  test('unknown locale argument throws; configured-but-absent tree is sparse', () => {
-    expect(() => getAllPosts('fr')).toThrow(/Unknown content locale "fr"/);
+  test('unknown locale argument throws', () => {
+    expect(() => getAllPosts('fr')).toThrow(
+      /Unknown content locale "fr"/,
+    );
   });
 });
-
 describe('locale tree validation cores (pure, defaultLocale-agnostic)', () => {
   test('classifyContentRootDir routes names correctly', () => {
     expect(classifyContentRootDir('posts', EN_ZH)).toBe('content-type');
