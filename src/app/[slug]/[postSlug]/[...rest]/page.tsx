@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { siteConfig } from '../../../../../site.config';
 import { resolveImageUrl } from '@/lib/json-ld';
-import { getBookChapterUrl, getBookUrl, getNoteUrl, getPostUrl, getPostsBasePath, getSeriesUrl, isNonDefaultLocale, localizeUrl, withTrailingSlash } from '@/lib/urls';
+import { getBookChapterUrl, getBookUrl, getFlowUrl, getNoteUrl, getPostUrl, getPostsBasePath, getSeriesUrl, isNonDefaultLocale, localizeUrl, withTrailingSlash } from '@/lib/urls';
 import { buildArticleMetadata , siteOpenGraph } from '@/lib/metadata';
 import { getTranslator, resolveLocaleValue } from '@/lib/i18n';
 import RenderPostPage from '@/components/RenderPostPage';
@@ -11,6 +11,8 @@ import SeriesPrefixListingBody from '@/components/page-bodies/SeriesPrefixListin
 import SeriesLandingBody from '@/components/page-bodies/SeriesLandingBody';
 import NotesIndexBody from '@/components/page-bodies/NotesIndexBody';
 import NoteDetailBody from '@/components/page-bodies/NoteDetailBody';
+import FlowDetailBody from '@/components/page-bodies/FlowDetailBody';
+import FlowsIndexBody from '@/components/page-bodies/FlowsIndexBody';
 import BookLandingBody from '@/components/page-bodies/BookLandingBody';
 import BookChapterBody from '@/components/page-bodies/BookChapterBody';
 import {
@@ -23,6 +25,7 @@ import {
 } from '@/lib/locale-routes';
 import { getPostContentLocales } from '@/lib/content/posts';
 import { getNoteContentLocales } from '@/lib/content/notes';
+import { getFlowContentLocales } from '@/lib/content/flows';
 import { safeDecodeParam } from '@/lib/route-params';
 import { getSeriesData, getSeriesPosts } from '@/lib/content/series';
 
@@ -116,6 +119,23 @@ export async function generateMetadata({ params }: { params: DeepParams }): Prom
       return { title: `${t('posts')} | ${siteTitle}`, description: t('posts_description'), openGraph: siteOpenGraph(locale) };
     case 'notesListing':
       return { title: `${t('notes')} | ${siteTitle}`, openGraph: siteOpenGraph(locale) };
+    case 'flowsListing':
+      return { title: `${t('flow')} | ${siteTitle}`, openGraph: siteOpenGraph(locale) };
+    case 'flow': {
+      const seo = contentSeoUrls(
+        localizeUrl(getFlowUrl(resolution.flow.slug), locale),
+        getFlowContentLocales(resolution.flow)
+      );
+      return buildArticleMetadata({
+        locale,
+        title: resolution.flow.title,
+        description: resolution.flow.excerpt,
+        publishedTime: resolution.flow.date,
+        canonicalUrl: seo.canonicalUrl,
+        languageAlternates: seo.languageAlternates,
+        twitterCard: 'summary',
+      });
+    }
     case 'book': {
       const seo = contentSeoUrls(
         localizeUrl(getBookUrl(resolution.book.slug), locale),
@@ -221,6 +241,10 @@ export default async function LocaleDeepPage({ params }: { params: DeepParams })
       );
     case 'notesListing':
       return <NotesIndexBody locale={locale} page={resolution.page} />;
+    case 'flowsListing':
+      return <FlowsIndexBody locale={locale} page={resolution.page} />;
+    case 'flow':
+      return <FlowDetailBody locale={locale} flowSlug={resolution.flow.slug} />;
     case 'book':
       return <BookLandingBody locale={locale} bookSlug={resolution.book.slug} />;
     case 'chapter':
