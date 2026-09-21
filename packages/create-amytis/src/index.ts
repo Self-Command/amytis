@@ -196,7 +196,7 @@ export function patchSiteConfig(projectDir: string, title: string, description: 
   // description: { en: "...", zh: "..." } or single-quoted equivalents
   src = mustReplace(
     src,
-    /description:\s*\{\s*en:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*,\s*zh:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*\}/,
+    /description:\s*\{\s*en:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*,\s*zh:\s*(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')\s*,?\s*\}/,
     `description: { en: ${JSON.stringify(description)}, zh: ${JSON.stringify(description)} }`,
     "description"
   );
