@@ -196,12 +196,17 @@ export function resolveLocalizedPath(locale: string, segments: string[]): Locali
   if (first === 'flows') {
     if (!kindEnabled('flows')) return null;
     if (n === 1) {
-      return hasLocaleContent(locale, 'flows') ? { kind: 'localeHome', locale } : null;
+      return hasLocaleContent(locale, 'flows') ? { kind: 'flowsListing', locale } : null;
     }
-    if (n === 2) {
-      const flowSlug = safeDecodeParam(segments[1]);
+    // Flow detail: /flows/YYYY/MM/DD (4 segments)
+    if (n === 4) {
+      const flowSlug = [1, 2, 3].map(i => safeDecodeParam(segments[i])).join('/');
       const flow = getFlowBySlug(flowSlug, locale);
       return flow ? { kind: 'flow', locale, flow } : null;
+    }
+    // Flow year/month listings
+    if (n === 2 || n === 3) {
+      return hasLocaleContent(locale, 'flows') ? { kind: 'flowsListing', locale } : null;
     }
     return null;
   }
