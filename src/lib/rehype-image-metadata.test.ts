@@ -23,102 +23,221 @@ function imgSrc(tree: Root): unknown {
 
 describe('rehype-image-metadata', () => {
   describe('relative paths (./)', () => {
-    test('resolves to posts public path when slug is posts/{slug}', () => {
+    test('resolves to posts public path with GitHub Pages basePath', () => {
       const tree = makeTree('./images/photo.png');
-      rehypeImageMetadata({ slug: 'posts/my-post' })(tree);
-      expect(imgSrc(tree)).toBe('/posts/my-post/images/photo.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/posts/my-post/images/photo.png',
+      );
     });
 
-    test('resolves to books public path when slug is books/{slug}', () => {
+    test('resolves to books public path with GitHub Pages basePath', () => {
       const tree = makeTree('./images/cover.jpg');
-      rehypeImageMetadata({ slug: 'books/my-book' })(tree);
-      expect(imgSrc(tree)).toBe('/books/my-book/images/cover.jpg');
+
+      rehypeImageMetadata({
+        slug: 'books/my-book',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/books/my-book/images/cover.jpg',
+      );
     });
 
-    test('resolves to flows public path when slug is flows/{year}/{month}/{day}', () => {
+    test('resolves to flows public path with GitHub Pages basePath', () => {
       const tree = makeTree('./images/snap.jpg');
-      rehypeImageMetadata({ slug: 'flows/2026/01/15' })(tree);
-      expect(imgSrc(tree)).toBe('/flows/2026/01/15/images/snap.jpg');
+
+      rehypeImageMetadata({
+        slug: 'flows/2026/01/15',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/flows/2026/01/15/images/snap.jpg',
+      );
     });
 
-    test('resolves to notes public path when slug is notes/{slug}', () => {
+    test('resolves to notes public path with GitHub Pages basePath', () => {
       const tree = makeTree('./images/diagram.svg');
-      rehypeImageMetadata({ slug: 'notes/my-note' })(tree);
-      expect(imgSrc(tree)).toBe('/notes/my-note/images/diagram.svg');
+
+      rehypeImageMetadata({
+        slug: 'notes/my-note',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/notes/my-note/images/diagram.svg',
+      );
     });
 
     test('does not modify src when no slug is provided', () => {
       const tree = makeTree('./images/photo.png');
+
       rehypeImageMetadata({})(tree);
+
       expect(imgSrc(tree)).toBe('./images/photo.png');
     });
 
     test('handles nested relative paths correctly', () => {
       const tree = makeTree('./assets/sub/image.webp');
-      rehypeImageMetadata({ slug: 'posts/my-post' })(tree);
-      expect(imgSrc(tree)).toBe('/posts/my-post/assets/sub/image.webp');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/posts/my-post/assets/sub/image.webp',
+      );
     });
   });
 
   describe('absolute paths (/)', () => {
-    test('keeps absolute paths as-is', () => {
+    test('adds GitHub Pages basePath to absolute local paths', () => {
       const tree = makeTree('/static/logo.png');
-      rehypeImageMetadata({ slug: 'posts/my-post' })(tree);
-      expect(imgSrc(tree)).toBe('/static/logo.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/static/logo.png',
+      );
     });
 
-    test('resolves absolute path without slug', () => {
+    test('adds GitHub Pages basePath without slug', () => {
       const tree = makeTree('/images/banner.png');
+
       rehypeImageMetadata({})(tree);
-      expect(imgSrc(tree)).toBe('/images/banner.png');
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/images/banner.png',
+      );
+    });
+
+    test('does not double-prefix an already prefixed path', () => {
+      const tree = makeTree('/amytis/images/banner.png');
+
+      rehypeImageMetadata({})(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/images/banner.png',
+      );
     });
   });
 
   describe('external URLs', () => {
     test('does not touch http:// URLs', () => {
+      const tree = makeTree('http://example.com/image.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        'http://example.com/image.png',
+      );
+    });
+
+    test('does not touch https:// URLs', () => {
       const tree = makeTree('https://example.com/image.png');
-      rehypeImageMetadata({ slug: 'posts/my-post' })(tree);
-      expect(imgSrc(tree)).toBe('https://example.com/image.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        'https://example.com/image.png',
+      );
     });
 
     test('does not touch // protocol-relative URLs', () => {
       const tree = makeTree('//cdn.example.com/image.png');
-      rehypeImageMetadata({ slug: 'posts/my-post' })(tree);
-      expect(imgSrc(tree)).toBe('//cdn.example.com/image.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '//cdn.example.com/image.png',
+      );
     });
   });
 
   describe('bare relative paths (no prefix)', () => {
     test('resolves bare relative paths against slug', () => {
       const tree = makeTree('images/photo.png');
-      rehypeImageMetadata({ slug: 'posts/my-post' })(tree);
-      expect(imgSrc(tree)).toBe('/posts/my-post/images/photo.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '/amytis/posts/my-post/images/photo.png',
+      );
     });
 
     test('keeps bare relative paths when no slug is provided', () => {
       const tree = makeTree('images/photo.png');
+
       rehypeImageMetadata({})(tree);
+
       expect(imgSrc(tree)).toBe('images/photo.png');
     });
   });
 
   describe('CDN prefix', () => {
-    test('prepends CDN base URL to resolved relative path', () => {
+    test('prepends CDN base URL after GitHub Pages basePath', () => {
       const tree = makeTree('./images/photo.png');
-      rehypeImageMetadata({ slug: 'posts/my-post', cdnBaseUrl: 'https://cdn.example.com' })(tree);
-      expect(imgSrc(tree)).toBe('https://cdn.example.com/posts/my-post/images/photo.png');
+
+      rehypeImageMetadata({
+        slug: 'posts/my-post',
+        cdnBaseUrl: 'https://cdn.example.com',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        'https://cdn.example.com/amytis/posts/my-post/images/photo.png',
+      );
     });
 
-    test('prepends CDN base URL to absolute path', () => {
+    test('prepends CDN base URL to absolute local path', () => {
       const tree = makeTree('/static/logo.png');
-      rehypeImageMetadata({ cdnBaseUrl: 'https://cdn.example.com' })(tree);
-      expect(imgSrc(tree)).toBe('https://cdn.example.com/static/logo.png');
+
+      rehypeImageMetadata({
+        cdnBaseUrl: 'https://cdn.example.com',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        'https://cdn.example.com/amytis/static/logo.png',
+      );
     });
 
     test('does not prepend CDN to external URLs', () => {
-      const tree = makeTree('https://external.com/img.png');
-      rehypeImageMetadata({ cdnBaseUrl: 'https://cdn.example.com' })(tree);
-      expect(imgSrc(tree)).toBe('https://external.com/img.png');
+      const tree = makeTree(
+        'https://external.com/img.png',
+      );
+
+      rehypeImageMetadata({
+        cdnBaseUrl: 'https://cdn.example.com',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        'https://external.com/img.png',
+      );
+    });
+
+    test('does not prepend CDN to protocol-relative URLs', () => {
+      const tree = makeTree(
+        '//external.com/img.png',
+      );
+
+      rehypeImageMetadata({
+        cdnBaseUrl: 'https://cdn.example.com',
+      })(tree);
+
+      expect(imgSrc(tree)).toBe(
+        '//external.com/img.png',
+      );
     });
   });
 });
