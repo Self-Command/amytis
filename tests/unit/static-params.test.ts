@@ -37,7 +37,7 @@ import * as realAuthors from '../../src/lib/content/authors';
 import * as realSeries from '../../src/lib/content/series';
 import * as realSeriesMetadata from '../../src/lib/content/series-metadata';
 import * as realUrls from '../../src/lib/urls';
-import * as realFeatures from '../../src/lib/features;
+import * as realFeatures from '../../src/lib/features';
 
 // `import * as ns` creates a live namespace — its properties update when
 // mock.module() patches the registry.  Spread into a plain object here
