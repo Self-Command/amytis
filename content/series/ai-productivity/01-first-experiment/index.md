@@ -13,6 +13,7 @@ draft: false
 latex: false
 toc: true
 share: true
+featured: true
 ---
 
 # 第一次实验：从聊天到工作流
