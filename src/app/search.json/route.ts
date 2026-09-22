@@ -3,7 +3,7 @@ import { getAllNotes } from '@/lib/content/notes';
 import { getAllFlows } from '@/lib/content/flows';
 import { getAllBooks, getBookChapter } from '@/lib/content/books';
 import { stripMarkdown } from '@/lib/search-utils';
-import { getBookChapterUrl, getNonDefaultLocales, getNoteUrl, getPostUrl, localizeUrl } from '@/lib/urls';
+import { getBookChapterUrl, getFlowUrl, getNonDefaultLocales, getNoteUrl, getPostUrl, localizeUrl } from '@/lib/urls';
 import { siteConfig } from '../../../site.config';
 
 export const dynamic = 'force-static';
@@ -116,6 +116,18 @@ export async function GET() {
         category: 'Note',
         tags: note.tags,
         content: stripMarkdown(note.content),
+        lang: locale,
+      });
+    }
+    for (const flow of getAllFlows(locale)) {
+      searchIndex.push({
+        title: flow.title,
+        slug: localizeUrl(getFlowUrl(flow.slug), locale).replace(/^\//, ''),
+        date: flow.date,
+        excerpt: flow.excerpt,
+        category: 'Flow',
+        tags: flow.tags,
+        content: stripMarkdown(flow.content),
         lang: locale,
       });
     }

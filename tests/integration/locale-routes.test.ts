@@ -161,6 +161,6 @@ describe('feature gates mirror the unprefixed routes', () => {
     // series/[slug] gates on `series`, books surfaces on `books`, notes
     // belong to `flow`; posts and pages are deliberately ungated (their
     // unprefixed routes have no isFeatureEnabled check).
-    expect(LOCALE_KIND_FEATURES).toEqual({ series: 'series', books: 'books', notes: 'flow' });
+    expect(LOCALE_KIND_FEATURES).toEqual({ series: 'series', books: 'books', notes: 'flow', flows: 'flow' });
   });
 });

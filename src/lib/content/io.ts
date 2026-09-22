@@ -114,11 +114,6 @@ export function classifyContentRootDir(
 
 /** Pure validation core for the entries inside a locale tree root. Exported for tests. */
 export function validateLocaleTreeEntry(locale: string, entryName: string): void {
-  if (entryName === 'flows') {
-    throw new Error(
-      `[amytis] content/${locale}/flows/ is not supported yet — flow locale trees are deferred. Remove the directory.`
-    );
-  }
   if (!CONTENT_TYPE_DIRS.has(entryName) && LOCALE_DIR_SHAPE.test(entryName)) {
     throw new Error(
       `[amytis] Nested locale directory content/${locale}/${entryName}/ is invalid — locale trees cannot nest.`

@@ -5,7 +5,7 @@ import { isFeatureEnabled } from '../features';
 import { domainDir } from './io';
 import { createMemo, createProdKeyedMemo } from './cache';
 import { getAllPosts, getPostsWithLocaleOriginals } from './posts';
-import { getAllFlows } from './flows';
+import { getAllFlows, getFlowsWithLocaleOriginals } from './flows';
 import { getAllNotes, getNotesWithLocaleOriginals } from './notes';
 import { getSeriesData } from './series';
 
@@ -23,7 +23,7 @@ const allTagsMemo = createMemo<Record<string, number>>();
 export function getAllTags(): Record<string, number> {
   return allTagsMemo.get(() => {
     const allPosts = getPostsWithLocaleOriginals();
-    const allFlows = getAllFlows();
+    const allFlows = getFlowsWithLocaleOriginals();
     const allNotes = getNotesWithLocaleOriginals();
 
     // counts keyed by lowercase for deduplication; display preserves first-seen casing
@@ -113,21 +113,17 @@ function computeTreeRegistry(locale: string): Map<string, SlugRegistryEntry> {
       map.set(p.slug, { url, type: 'post', title: p.title });
     });
 
-    // Flows have no locale trees (deferred) — only the default registry sees them.
-    if (locale === DEFAULT_LOCALE) {
-      getAllFlows().forEach(f => {
-        const existing = map.get(f.slug);
-        if (existing) {
-          // Reachable via a day with both DD.md and DD/index.md — the walk
-          // yields two flows with the same date slug.
-          throw new Error(
-            `[amytis] Flow slug "${f.slug}" collides with an existing ${existing.type} of the same slug. ` +
-            `Slugs must be unique across posts, flows, notes, and series so wikilinks resolve unambiguously.`
-          );
-        }
-        map.set(f.slug, { url: getFlowUrl(f.slug), type: 'flow', title: f.title });
-      });
-    }
+    // Flows register for every locale tree (the deferred-flows restriction is lifted).
+    getAllFlows(locale).forEach(f => {
+      const existing = map.get(f.slug);
+      if (existing) {
+        throw new Error(
+          `[amytis] Flow slug "${f.slug}" collides with an existing ${existing.type} of the same slug. ` +
+          `Slugs must be unique across posts, flows, notes, and series so wikilinks resolve unambiguously.`
+        );
+      }
+      map.set(f.slug, { url: localizeUrl(getFlowUrl(f.slug), locale), type: 'flow', title: f.title });
+    });
 
     getAllNotes(locale).forEach(n => {
       // Slugs and aliases must be unique across all content so a wikilink
@@ -235,9 +231,7 @@ function buildBacklinkIndex(locale: string): Map<string, BacklinkSource[]> {
 
   getAllPosts(locale).forEach(p => addBacklinks(p.content, p.slug, p.title, 'post', getPostUrl(p)));
   getAllNotes(locale).forEach(n => addBacklinks(n.content, n.slug, n.title, 'note', localizeUrl(getNoteUrl(n.slug), locale)));
-  if (locale === DEFAULT_LOCALE) {
-    getAllFlows().forEach(f => addBacklinks(f.content, f.slug, f.title, 'flow', getFlowUrl(f.slug)));
-  }
+  getAllFlows(locale).forEach(f => addBacklinks(f.content, f.slug, f.title, 'flow', localizeUrl(getFlowUrl(f.slug), locale)));
 
   return index;
 }

@@ -23,10 +23,16 @@ const { t } = getTranslator(DEFAULT_LOCALE);
  * Generates the static paths for all top-level pages at build time,
  * plus any custom URL prefixes configured for posts or series, plus the
  * locale roots (/zh) of locale trees with content.
+ *
+ * `output: "export"` requires a non-empty static params result for dynamic
+ * routes. When this personal garden has no top-level content yet, emit a
+ * harmless placeholder so Next.js can complete the static export.
+ *
  * Alias collisions throw inside topLevelSlugParams (strict build).
  */
 export async function generateStaticParams() {
-  return [...topLevelSlugParams(), ...localeHomeParams()];
+  const params = [...topLevelSlugParams(), ...localeHomeParams()];
+  return params.length > 0 ? params : [{ slug: '_' }];
 }
 
 export const dynamicParams = false;
@@ -54,6 +60,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         title: `${t('posts')} | ${resolveLocaleValue(siteConfig.title, DEFAULT_LOCALE)}`,
         description: t('posts_description'),
       };
+
     case 'seriesListing': {
       const seriesData = getSeriesData(resolution.seriesSlug);
       if (seriesData) {
@@ -64,6 +71,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       }
       return { title: 'Page Not Found' };
     }
+
     case 'page': {
       // Twin pages canonicalize here (the unprefixed URL) and advertise the
       // reciprocal hreflang set; single-locale pages get a plain canonical.
@@ -80,8 +88,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         },
       };
     }
+
     case 'redirect':
       return { title: resolution.post.title };
+
     default:
       return { title: 'Page Not Found' };
   }
@@ -105,7 +115,13 @@ export default async function Page({
 
   // Custom posts basePath listing (e.g. /articles)
   if (resolution.kind === 'postsListing') {
-    return <PostsListingBody locale={DEFAULT_LOCALE} page={1} paginationBasePath={`/${resolution.basePath}`} />;
+    return (
+      <PostsListingBody
+        locale={DEFAULT_LOCALE}
+        page={1}
+        paginationBasePath={`/${resolution.basePath}`}
+      />
+    );
   }
 
   // Series listing at a custom or auto path (e.g. /weeklies, /my-series)
@@ -131,7 +147,13 @@ export default async function Page({
   const layout = page.layout || 'simple';
 
   if (layout === 'post') {
-    return <PostLayout post={page} locale={DEFAULT_LOCALE} commentCategory="staticPages" />;
+    return (
+      <PostLayout
+        post={page}
+        locale={DEFAULT_LOCALE}
+        commentCategory="staticPages"
+      />
+    );
   }
 
   return <SimpleLayout post={page} />;

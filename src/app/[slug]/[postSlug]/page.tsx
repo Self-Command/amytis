@@ -15,6 +15,7 @@ import SeriesPrefixListingBody from '@/components/page-bodies/SeriesPrefixListin
 import SeriesIndexBody from '@/components/page-bodies/SeriesIndexBody';
 import BooksIndexBody from '@/components/page-bodies/BooksIndexBody';
 import NotesIndexBody from '@/components/page-bodies/NotesIndexBody';
+import FlowsIndexBody from '@/components/page-bodies/FlowsIndexBody';
 import { prefixedPostParams, resolvePrefixedPost } from '@/lib/route-aliases';
 import { contentSeoUrls, localeSecondLevelParams, resolveLocalizedPath, type LocalizedResolution } from '@/lib/locale-routes';
 import { safeDecodeParam } from '@/lib/route-params';
@@ -67,6 +68,8 @@ function localizedMetadata(locale: string, resolution: LocalizedResolution): Met
       });
     case 'notesListing':
       return createListingMetadata({ locale, titleKey: 'notes', description: 'Knowledge base notes.' });
+    case 'flowsListing':
+      return createListingMetadata({ locale, titleKey: 'flow', description: 'Daily notes and quick thoughts.' });
     case 'seriesPrefixListing': {
       const seriesData = getSeriesData(resolution.seriesSlug, locale);
       if (!seriesData) return { title: 'Page Not Found' };
@@ -117,6 +120,8 @@ function LocalizedSecondLevel({ locale, resolution }: { locale: string; resoluti
       return <BooksIndexBody locale={locale} />;
     case 'notesListing':
       return <NotesIndexBody locale={locale} page={resolution.page} />;
+    case 'flowsListing':
+      return <FlowsIndexBody locale={locale} page={resolution.page} />;
     case 'seriesPrefixListing':
       return (
         <SeriesPrefixListingBody

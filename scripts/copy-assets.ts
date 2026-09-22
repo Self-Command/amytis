@@ -411,14 +411,14 @@ function processBooks(booksRootDir = booksSrcDir, booksDestRootDir = booksDestDi
   });
 }
 
-function processFlows() {
-  if (!fs.existsSync(flowsSrcDir)) return;
+function processFlows(flowsRootDir = flowsSrcDir, flowsDestRootDir = flowsDestDir) {
+  if (!fs.existsSync(flowsRootDir)) return;
 
   // Walk content/flows/YYYY/MM/ structure for folder-based flows with co-located assets
-  const yearDirs = fs.readdirSync(flowsSrcDir, { withFileTypes: true });
+  const yearDirs = fs.readdirSync(flowsRootDir, { withFileTypes: true });
   for (const yearEntry of yearDirs) {
     if (!yearEntry.isDirectory() || !/^\d{4}$/.test(yearEntry.name)) continue;
-    const yearPath = path.join(flowsSrcDir, yearEntry.name);
+    const yearPath = path.join(flowsRootDir, yearEntry.name);
 
     const monthDirs = fs.readdirSync(yearPath, { withFileTypes: true });
     for (const monthEntry of monthDirs) {
@@ -433,7 +433,7 @@ function processFlows() {
         if (!/^\d{2}$/.test(rawName)) continue;
 
         const srcFlowDir = path.join(monthPath, rawName);
-        const destFlowDir = path.join(flowsDestDir, yearEntry.name, monthEntry.name, rawName);
+        const destFlowDir = path.join(flowsDestRootDir, yearEntry.name, monthEntry.name, rawName);
 
         console.log(`Processing Flow: ${yearEntry.name}/${monthEntry.name}/${rawName}`);
         markGeneratedDestination(destFlowDir);
@@ -473,10 +473,13 @@ if (import.meta.main) {
     const publicRoot = path.join(process.cwd(), 'public', locale);
     const localePostsDest = path.join(publicRoot, 'posts');
     const localeBooksDest = path.join(publicRoot, 'books');
+    const localeFlowsDest = path.join(publicRoot, 'flows');
     fs.mkdirSync(localePostsDest, { recursive: true });
+    fs.mkdirSync(localeFlowsDest, { recursive: true });
     processPosts(path.join(contentRoot, 'posts'), localePostsDest, `content/${locale}/posts`);
     processSeries(path.join(contentRoot, 'series'), localePostsDest, `content/${locale}/series`);
     processBooks(path.join(contentRoot, 'books'), localeBooksDest);
+    processFlows(path.join(contentRoot, 'flows'), localeFlowsDest);
     pruneOrphanedOptimizerDirs(publicRoot);
   }
   console.log('Assets copied successfully.');

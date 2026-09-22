@@ -1,8 +1,8 @@
 import { getPostsWithLocaleOriginals } from './content/posts';
-import { getAllFlows } from './content/flows';
+import { getFlowsWithLocaleOriginals } from './content/flows';
 import { buildSlugRegistry, type SlugRegistryEntry } from './content/discovery';
 import { siteConfig } from '../../site.config';
-import { getPostUrl, getFlowUrl, withTrailingSlash } from './urls';
+import { getPostUrl, getFlowUrl, withTrailingSlash, localizeUrl } from './urls';
 import { resolveLocaleValue } from './i18n';
 import { markdownToHtml } from './markdown-to-html';
 import { sanitizeRenderedRstHtml } from './rst-sanitize';
@@ -113,8 +113,8 @@ export function getFeedItems(feedType: FeedType = 'main', includeFullContent: bo
     };
   });
 
-  const getFlowEntries = (): FeedEntry[] => getAllFlows().map((flow) => {
-    const url = withTrailingSlash(`${baseUrl}${getFlowUrl(flow.slug)}`);
+  const getFlowEntries = (): FeedEntry[] => getFlowsWithLocaleOriginals().map((flow) => {
+    const url = withTrailingSlash(`${baseUrl}${localizeUrl(getFlowUrl(flow.slug), flow.locale)}`);
     return {
       item: {
         title: flow.title,

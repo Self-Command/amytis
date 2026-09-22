@@ -22,6 +22,7 @@
  */
 import { describe, test, expect, mock, beforeAll, beforeEach, afterAll, afterEach } from 'bun:test';
 import { setEnvVar, restoreEnvVar } from '../helpers/env';
+import { siteConfig } from '../../site.config';
 
 // ─── Capture real modules ─────────────────────────────────────────────────────
 // Static imports are hoisted and resolved before any executable code (including
@@ -174,12 +175,19 @@ beforeAll(() => {
 
   mock.module('@/lib/content/posts', () => ({
     ...snapshotPosts,
-    // Locale-aware like the real getter: the mocked content belongs to the
-    // default tree only, so the cross-tree alias scan sees each alias once.
+
+    // The mocked posts belong to the configured default locale tree.
+    // The real site currently uses `zh` as defaultLocale. Returning the
+    // same posts for the default tree and empty content for non-default
+    // locale trees prevents cross-tree alias validation from seeing the
+    // same mocked post twice.
     getAllPosts: (locale?: string) =>
-      locale !== undefined && locale !== 'en'
+      locale !== undefined && locale !== siteConfig.i18n.defaultLocale
         ? []
-        : mockedPosts.filter(p => !(process.env.NODE_ENV === 'production' && p.draft)),
+        : mockedPosts.filter(
+            p => !(process.env.NODE_ENV === 'production' && p.draft)
+          ),
+
     getListingPosts: () => [],
     getPostBySlug: () => null,
     getPostsByTag: () => [],
@@ -324,32 +332,50 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     afterEach(() => {
       mock.module('@/lib/features', () => snapshotFeatures);
       mock.module('@/lib/content/books', () => ({
-        ...snapshotBooks, getAllBooks: () => [], getBookData: () => null,
-        getBookChapter: () => null, getBooksByAuthor: () => [],
+        ...snapshotBooks,
+        getAllBooks: () => [],
+        getBookData: () => null,
+        getBookChapter: () => null,
+        getBooksByAuthor: () => [],
       }));
     });
 
     // Non-empty content + disabled flag: only the flag can produce the
     // placeholder here, so this proves the route is gated (not just empty).
     test('books/[slug] ignores real books when the books feature is disabled', async () => {
-      mock.module('@/lib/features', () => ({ ...snapshotFeatures, isFeatureEnabled: (k: string) => k !== 'books' }));
-      mock.module('@/lib/content/books', () => ({ ...snapshotBooks, getAllBooks: () => [{ slug: 'real-book', chapters: [] }] }));
+      mock.module('@/lib/features', () => ({
+        ...snapshotFeatures,
+        isFeatureEnabled: (k: string) => k !== 'books'
+      }));
+      mock.module('@/lib/content/books', () => ({
+        ...snapshotBooks,
+        getAllBooks: () => [{ slug: 'real-book', chapters: [] }]
+      }));
       const { generateStaticParams } = await import('../../src/app/books/[slug]/page');
       expect(await generateStaticParams()).toEqual([{ slug: '_' }]);
     });
 
     test('books/[slug]/[...chapter] ignores real books when the books feature is disabled', async () => {
-      mock.module('@/lib/features', () => ({ ...snapshotFeatures, isFeatureEnabled: (k: string) => k !== 'books' }));
+      mock.module('@/lib/features', () => ({
+        ...snapshotFeatures,
+        isFeatureEnabled: (k: string) => k !== 'books'
+      }));
       mock.module('@/lib/content/books', () => ({
         ...snapshotBooks,
-        getAllBooks: () => [{ slug: 'real-book', chapters: [{ id: 'intro', title: 'Intro' }] }],
+        getAllBooks: () => [{
+          slug: 'real-book',
+          chapters: [{ id: 'intro', title: 'Intro' }]
+        }]
       }));
       const { generateStaticParams } = await import('../../src/app/books/[slug]/[...chapter]/page');
       expect(await generateStaticParams()).toEqual([{ slug: '_', chapter: ['_'] }]);
     });
 
     test('series/[slug] returns the placeholder when the series feature is disabled', async () => {
-      mock.module('@/lib/features', () => ({ ...snapshotFeatures, isFeatureEnabled: (k: string) => k !== 'series' }));
+      mock.module('@/lib/features', () => ({
+        ...snapshotFeatures,
+        isFeatureEnabled: (k: string) => k !== 'series'
+      }));
       const { generateStaticParams } = await import('../../src/app/series/[slug]/page');
       expect(await generateStaticParams()).toEqual([{ slug: '_' }]);
     });
@@ -364,7 +390,12 @@ describe('generateStaticParams — placeholder when content is empty', () => {
 
     test('series/[slug] includes redirectFrom slug when series is renamed', async () => {
       mockedSeries = { 'new-name': [] };
-      mockedSeriesData = { 'new-name': { redirectFrom: ['/series/old-name'], title: 'New Series' } };
+      mockedSeriesData = {
+        'new-name': {
+          redirectFrom: ['/series/old-name'],
+          title: 'New Series'
+        }
+      };
       const { generateStaticParams } = await import('../../src/app/series/[slug]/page');
       const params = await generateStaticParams();
       expect(params).toContainEqual({ slug: 'new-name' });
@@ -396,17 +427,29 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     });
 
     test('series/[slug]/page/[page] includes encoded Unicode slug in non-production', async () => {
-      mockedSeries = { '软件构架设计': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` })) };
+      mockedSeries = {
+        '软件构架设计': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` }))
+      };
       setEnvVar('NODE_ENV', 'development');
       const { generateStaticParams } = await import('../../src/app/series/[slug]/page/[page]/page');
       const params = await generateStaticParams();
       expect(params).toContainEqual({ slug: '软件构架设计', page: '2' });
-      expect(params).toContainEqual({ slug: '%E8%BD%AF%E4%BB%B6%E6%9E%84%E6%9E%B6%E8%AE%BE%E8%AE%A1', page: '2' });
+      expect(params).toContainEqual({
+        slug: '%E8%BD%AF%E4%BB%B6%E6%9E%84%E6%9E%B6%E8%AE%BE%E8%AE%A1',
+        page: '2'
+      });
     });
 
     test('series/[slug]/page/[page] includes redirectFrom slug when series is renamed', async () => {
-      mockedSeries = { 'new-name': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` })) };
-      mockedSeriesData = { 'new-name': { redirectFrom: ['/series/old-name'], title: 'New Series' } };
+      mockedSeries = {
+        'new-name': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` }))
+      };
+      mockedSeriesData = {
+        'new-name': {
+          redirectFrom: ['/series/old-name'],
+          title: 'New Series'
+        }
+      };
       const { generateStaticParams } = await import('../../src/app/series/[slug]/page/[page]/page');
       const params = await generateStaticParams();
       expect(params).toContainEqual({ slug: 'new-name', page: '2' });
@@ -414,8 +457,15 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     });
 
     test('series/[slug]/page/[page] redirects old alias slugs to the canonical paginated path', async () => {
-      mockedSeries = { 'new-name': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` })) };
-      mockedSeriesData = { 'new-name': { redirectFrom: ['/series/old-name'], title: 'New Series' } };
+      mockedSeries = {
+        'new-name': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` }))
+      };
+      mockedSeriesData = {
+        'new-name': {
+          redirectFrom: ['/series/old-name'],
+          title: 'New Series'
+        }
+      };
       const page = await import('../../src/app/series/[slug]/page/[page]/page');
       await expect(page.default({
         params: Promise.resolve({ slug: 'old-name', page: '2' }),
@@ -423,7 +473,9 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     });
 
     test('series routes match percent-encoded redirectFrom aliases after normalization', async () => {
-      mockedSeries = { '软件构架设计': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` })) };
+      mockedSeries = {
+        '软件构架设计': Array.from({ length: 6 }, (_, i) => ({ slug: `p${i + 1}` }))
+      };
       mockedSeriesData = {
         '软件构架设计': {
           redirectFrom: ['/series/%E8%BD%AF%E4%BB%B6%E8%AE%BE%E8%AE%A1'],
@@ -433,12 +485,17 @@ describe('generateStaticParams — placeholder when content is empty', () => {
 
       const seriesPage = await import('../../src/app/series/[slug]/page');
       await expect(seriesPage.default({
-        params: Promise.resolve({ slug: '%E8%BD%AF%E4%BB%B6%E8%AE%BE%E8%AE%A1' }),
+        params: Promise.resolve({
+          slug: '%E8%BD%AF%E4%BB%B6%E8%BD%AF%E4%BB%B6%E8%AE%BE%E8%AE%A1',
+        }),
       })).resolves.toBeDefined();
 
       const paginatedPage = await import('../../src/app/series/[slug]/page/[page]/page');
       await expect(paginatedPage.default({
-        params: Promise.resolve({ slug: '%E8%BD%AF%E4%BB%B6%E8%AE%BE%E8%AE%A1', page: '2' }),
+        params: Promise.resolve({
+          slug: '%E8%BD%AF%E4%BB%B6%E8%BD%AF%E4%BB%B6%E8%AE%BE%E8%AE%A1',
+          page: '2',
+        }),
       })).resolves.toBeDefined();
     });
 
@@ -448,7 +505,10 @@ describe('generateStaticParams — placeholder when content is empty', () => {
         'new-name': Array.from({ length: 6 }, (_, i) => ({ slug: `b${i + 1}` })),
       };
       mockedSeriesData = {
-        'new-name': { redirectFrom: ['/series/existing-slug'], title: 'New Series' },
+        'new-name': {
+          redirectFrom: ['/series/existing-slug'],
+          title: 'New Series'
+        },
       };
       const { generateStaticParams } = await import('../../src/app/series/[slug]/page/[page]/page');
       await expect(generateStaticParams()).rejects.toThrow(/conflicts with an existing series slug/i);
@@ -460,8 +520,14 @@ describe('generateStaticParams — placeholder when content is empty', () => {
         'second-series': Array.from({ length: 6 }, (_, i) => ({ slug: `b${i + 1}` })),
       };
       mockedSeriesData = {
-        'first-series': { redirectFrom: ['/series/old-name'], title: 'First' },
-        'second-series': { redirectFrom: ['/series/old-name'], title: 'Second' },
+        'first-series': {
+          redirectFrom: ['/series/old-name'],
+          title: 'First'
+        },
+        'second-series': {
+          redirectFrom: ['/series/old-name'],
+          title: 'Second'
+        },
       };
       const { generateStaticParams } = await import('../../src/app/series/[slug]/page/[page]/page');
       await expect(generateStaticParams()).rejects.toThrow(/claimed by both/i);
@@ -482,7 +548,9 @@ describe('generateStaticParams — placeholder when content is empty', () => {
       const params = await generateStaticParams();
 
       expect(params).toContainEqual({ slug: '中文测试文章' });
-      expect(params).toContainEqual({ slug: '%E4%B8%AD%E6%96%87%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0' });
+      expect(params).toContainEqual({
+        slug: '%E4%B8%AD%E6%96%87%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0'
+      });
     });
 
     test('posts/[slug] includes only raw Unicode slug in production', async () => {
@@ -492,7 +560,9 @@ describe('generateStaticParams — placeholder when content is empty', () => {
       const params = await generateStaticParams();
 
       expect(params).toContainEqual({ slug: '中文测试文章' });
-      expect(params).not.toContainEqual({ slug: '%E4%B8%AD%E6%96%87%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0' });
+      expect(params).not.toContainEqual({
+        slug: '%E4%B8%AD%E6%96%87%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0'
+      });
     });
 
     test('posts/page/[page] returns [{ page: "2" }]', async () => {
@@ -525,7 +595,8 @@ describe('generateStaticParams — placeholder when content is empty', () => {
         mock.module('@/lib/urls', () => ({
           ...snapshotUrls,
           getSeriesAutoPaths: () => false,
-          getPostUrl: (post: { slug: string; series?: string }) => `/posts/${post.slug}`,
+          getPostUrl: (post: { slug: string; series?: string }) =>
+            `/posts/${post.slug}`,
         }));
       });
 
@@ -544,7 +615,10 @@ describe('generateStaticParams — placeholder when content is empty', () => {
         mockedSeries = { 'my-series': [{ slug: 'my-post' }] };
         const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
         const params = await generateStaticParams();
-        expect(params).not.toContainEqual({ slug: 'my-series', postSlug: 'my-post' });
+        expect(params).not.toContainEqual({
+          slug: 'my-series',
+          postSlug: 'my-post'
+        });
       });
 
       test('posts/[slug] includes series post when canonical matches /posts/[slug]', async () => {
@@ -556,21 +630,37 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     });
 
     test('[slug]/[postSlug] includes redirectFrom paths as additional params', async () => {
-      mockedPosts = [{ slug: 'my-post', series: 'my-series', redirectFrom: ['/old-prefix/my-post'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        series: 'my-series',
+        redirectFrom: ['/old-prefix/my-post']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
       const params = await generateStaticParams();
-      expect(params).toContainEqual({ slug: 'old-prefix', postSlug: 'my-post' });
+      expect(params).toContainEqual({
+        slug: 'old-prefix',
+        postSlug: 'my-post'
+      });
     });
 
     test('[slug]/[postSlug] does not include /posts/* redirectFrom when basePath is "posts"', async () => {
-      mockedPosts = [{ slug: 'new-name', redirectFrom: ['/posts/old-name'] }];
+      mockedPosts = [{
+        slug: 'new-name',
+        redirectFrom: ['/posts/old-name']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
       const params = await generateStaticParams();
-      expect(params).not.toContainEqual({ slug: 'posts', postSlug: 'old-name' });
+      expect(params).not.toContainEqual({
+        slug: 'posts',
+        postSlug: 'old-name'
+      });
     });
 
     test('posts/[slug] includes redirectFrom slug when post is renamed within /posts/', async () => {
-      mockedPosts = [{ slug: 'new-name', redirectFrom: ['/posts/old-name'] }];
+      mockedPosts = [{
+        slug: 'new-name',
+        redirectFrom: ['/posts/old-name']
+      }];
       const { generateStaticParams } = await import('../../src/app/posts/[slug]/page');
       const params = await generateStaticParams();
       expect(params).toContainEqual({ slug: 'new-name' });
@@ -578,21 +668,31 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     });
 
     test('[slug]/page includes single-segment redirectFrom paths as additional params', async () => {
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/old-slug'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/old-slug']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       const params = await generateStaticParams();
       expect(params).toContainEqual({ slug: 'old-slug' });
     });
 
     test('[slug]/page does not include multi-segment redirectFrom paths', async () => {
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/old-prefix/my-post'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/old-prefix/my-post']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       const params = await generateStaticParams();
       expect(params).not.toContainEqual({ slug: 'old-prefix' });
     });
 
     test('[slug]/page does not include single-segment redirectFrom for draft posts in production', async () => {
-      mockedPosts = [{ slug: 'my-post', draft: true, redirectFrom: ['/old-slug'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        draft: true,
+        redirectFrom: ['/old-slug']
+      }];
       setEnvVar('NODE_ENV', 'production');
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       const params = await generateStaticParams();
@@ -600,28 +700,43 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     });
 
     test('[slug]/page throws when redirectFrom alias conflicts with a reserved route', async () => {
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/tags'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/tags']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       expect(() => generateStaticParams()).toThrow('[amytis] redirectFrom "/tags"');
     });
 
     test('[slug]/page throws when two posts claim the same single-segment alias', async () => {
       mockedPosts = [
-        { slug: 'post-a', redirectFrom: ['/old-slug'] },
-        { slug: 'post-b', redirectFrom: ['/old-slug'] },
+        {
+          slug: 'post-a',
+          redirectFrom: ['/old-slug']
+        },
+        {
+          slug: 'post-b',
+          redirectFrom: ['/old-slug']
+        },
       ];
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       expect(() => generateStaticParams()).toThrow('[amytis] redirectFrom "/old-slug"');
     });
 
     test('[slug]/page throws when redirectFrom alias conflicts with "posts" (RESERVED_ROUTE_SEGMENTS)', async () => {
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/posts'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/posts']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       expect(() => generateStaticParams()).toThrow('[amytis] redirectFrom "/posts"');
     });
 
     test('[slug]/page includes Unicode single-segment redirectFrom slug as param', async () => {
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/中文路由'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/中文路由']
+      }];
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       const params = await generateStaticParams();
       expect(params).toContainEqual({ slug: '中文路由' });
@@ -636,7 +751,9 @@ describe('generateStaticParams — placeholder when content is empty', () => {
           getSeriesAutoPaths: () => true,
           getSeriesCustomPaths: () => ({}),
           getPostUrl: (post: { slug: string; series?: string }) =>
-            post.series ? `/${post.series}/${post.slug}` : `/posts/${post.slug}`,
+            post.series
+              ? `/${post.series}/${post.slug}`
+              : `/posts/${post.slug}`,
           validateSeriesAutoPaths: () => {},
         }));
       });
@@ -666,10 +783,14 @@ describe('generateStaticParams — placeholder when content is empty', () => {
           getSeriesAutoPaths: () => true,
           getSeriesCustomPaths: () => ({ 'my-series': 'articles' }),
           getPostUrl: (post: { slug: string; series?: string }) =>
-            post.series === 'my-series' ? `/articles/${post.slug}` : `/posts/${post.slug}`,
+            post.series === 'my-series'
+              ? `/articles/${post.slug}`
+              : `/posts/${post.slug}`,
           validateSeriesAutoPaths: () => {},
         }));
-        mockedSeries = { 'my-series': [{ slug: 'my-post' }] };
+        mockedSeries = {
+          'my-series': [{ slug: 'my-post' }]
+        };
         const { generateStaticParams } = await import('../../src/app/[slug]/page');
         const params = await generateStaticParams();
         expect(params).toContainEqual({ slug: 'articles' });
@@ -682,6 +803,7 @@ describe('generateStaticParams — placeholder when content is empty', () => {
     test('[slug]/page returns at least one param (static pages + no custom paths)', async () => {
       const { generateStaticParams } = await import('../../src/app/[slug]/page');
       const params = await generateStaticParams();
+
       // With no pages, no custom basePath, and no series customPaths configured,
       // the result is an empty array — but the route itself is static so this is valid.
       expect(Array.isArray(params)).toBe(true);
@@ -695,46 +817,94 @@ describe('generateStaticParams — placeholder when content is empty', () => {
 
     test('[slug]/[postSlug] includes encoded Unicode postSlug variants in non-production', async () => {
       // Use redirectFrom to place a Unicode postSlug at a 2-segment path — no url mock needed.
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/old-prefix/中文文章'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/old-prefix/中文文章']
+      }];
       setEnvVar('NODE_ENV', 'development');
       const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
       const params = await generateStaticParams();
-      expect(params).toContainEqual({ slug: 'old-prefix', postSlug: '中文文章' });
-      expect(params).toContainEqual({ slug: 'old-prefix', postSlug: encodeURIComponent('中文文章') });
+      expect(params).toContainEqual({
+        slug: 'old-prefix',
+        postSlug: '中文文章'
+      });
+      expect(params).toContainEqual({
+        slug: 'old-prefix',
+        postSlug: encodeURIComponent('中文文章')
+      });
     });
 
     test('[slug]/[postSlug] includes encoded Unicode prefix variants in non-production', async () => {
-      mockedSeries = { '软件构架设计': [{ slug: 'architecture-post' }] };
+      mockedSeries = {
+        '软件构架设计': [{ slug: 'architecture-post' }]
+      };
       setEnvVar('NODE_ENV', 'development');
       const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
       const params = await generateStaticParams();
-      expect(params).toContainEqual({ slug: '软件构架设计', postSlug: 'architecture-post' });
-      expect(params).toContainEqual({ slug: encodeURIComponent('软件构架设计'), postSlug: 'architecture-post' });
+      expect(params).toContainEqual({
+        slug: '软件构架设计',
+        postSlug: 'architecture-post'
+      });
+      expect(params).toContainEqual({
+        slug: encodeURIComponent('软件构架设计'),
+        postSlug: 'architecture-post'
+      });
     });
 
     test('[slug]/[postSlug] includes encoded Unicode prefix and postSlug variants together in non-production', async () => {
-      mockedSeries = { '软件构架设计': [{ slug: '中文文章' }] };
+      mockedSeries = {
+        '软件构架设计': [{ slug: '中文文章' }]
+      };
       setEnvVar('NODE_ENV', 'development');
       const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
       const params = await generateStaticParams();
-      expect(params).toContainEqual({ slug: '软件构架设计', postSlug: '中文文章' });
-      expect(params).toContainEqual({ slug: encodeURIComponent('软件构架设计'), postSlug: '中文文章' });
-      expect(params).toContainEqual({ slug: '软件构架设计', postSlug: encodeURIComponent('中文文章') });
-      expect(params).toContainEqual({ slug: encodeURIComponent('软件构架设计'), postSlug: encodeURIComponent('中文文章') });
+
+      expect(params).toContainEqual({
+        slug: '软件构架设计',
+        postSlug: '中文文章'
+      });
+      expect(params).toContainEqual({
+        slug: encodeURIComponent('软件构架设计'),
+        postSlug: '中文文章'
+      });
+      expect(params).toContainEqual({
+        slug: '软件构架设计',
+        postSlug: encodeURIComponent('中文文章')
+      });
+      expect(params).toContainEqual({
+        slug: encodeURIComponent('软件构架设计'),
+        postSlug: encodeURIComponent('中文文章')
+      });
     });
 
     test('[slug]/[postSlug] does not include encoded Unicode postSlug variants in production', async () => {
-      mockedPosts = [{ slug: 'my-post', redirectFrom: ['/old-prefix/中文文章'] }];
+      mockedPosts = [{
+        slug: 'my-post',
+        redirectFrom: ['/old-prefix/中文文章']
+      }];
       setEnvVar('NODE_ENV', 'production');
       const { generateStaticParams } = await import('../../src/app/[slug]/[postSlug]/page');
       const params = await generateStaticParams();
-      expect(params).toContainEqual({ slug: 'old-prefix', postSlug: '中文文章' });
-      expect(params).not.toContainEqual({ slug: 'old-prefix', postSlug: encodeURIComponent('中文文章') });
+
+      expect(params).toContainEqual({
+        slug: 'old-prefix',
+        postSlug: '中文文章'
+      });
+      expect(params).not.toContainEqual({
+        slug: 'old-prefix',
+        postSlug: encodeURIComponent('中文文章')
+      });
     });
 
     test('[slug]/[postSlug] page resolves encoded Unicode series prefix without notFound', async () => {
-      mockedSeries = { '软件构架设计': [{ slug: 'my-post' }] };
-      mockedSeriesData = { '软件构架设计': { title: '软件构架设计' } };
+      mockedSeries = {
+        '软件构架设计': [{ slug: 'my-post' }]
+      };
+      mockedSeriesData = {
+        '软件构架设计': {
+          title: '软件构架设计'
+        }
+      };
       mockedPosts = [{
         slug: 'my-post',
         title: 'My Post',

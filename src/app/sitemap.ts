@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getAllPosts, getAllPages, getPostContentLocales, getPageContentLocales } from '@/lib/content/posts';
-import { getAllFlows } from '@/lib/content/flows';
+import { getAllFlows, getFlowContentLocales } from '@/lib/content/flows';
 import { getAllNotes, getNoteContentLocales } from '@/lib/content/notes';
 import { getAllBooks, getBookChapter } from '@/lib/content/books';
 import { getAllSeries, getSeriesData } from '@/lib/content/series';
@@ -25,6 +25,7 @@ import {
   getSeriesListUrl,
   getStaticPageUrl,
   getNoteUrl,
+  getFlowUrl,
   localizeUrl,
   withTrailingSlash,
 } from '@/lib/urls';
@@ -137,6 +138,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: flow.date,
     changeFrequency: 'monthly' as const,
     priority: 0.5,
+    ...languagesFor(getFlowUrl(flow.slug), getFlowContentLocales(flow)),
   }));
 
   const flowYears = new Set<string>();
@@ -297,6 +299,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
           changeFrequency: 'monthly',
           priority: 0.5,
           ...languagesFor(getNoteUrl(note.slug), getNoteContentLocales(note)),
+        });
+      }
+    }
+
+    // Flows of the locale tree.
+    if (flowEnabled && hasLocaleContent(locale, 'flows')) {
+      for (const flow of getAllFlows(locale)) {
+        entries.push({
+          url: `${baseUrl}${localizeUrl(getFlowUrl(flow.slug), locale)}`,
+          lastModified: flow.date,
+          changeFrequency: 'monthly',
+          priority: 0.5,
+          ...languagesFor(getFlowUrl(flow.slug), getFlowContentLocales(flow)),
         });
       }
     }
