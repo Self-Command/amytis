@@ -61,9 +61,15 @@ describe('default gating (real FEATURE_URLS / isNavUrlEnabled, no injected predi
     expect(isNavUrlEnabled('')).toBe(true);
   });
 
-  test('visibleNavItems with the live config keeps Notes/Graph in the More menu', () => {
-    const more = visibleNavItems(siteConfig.nav).find(i => i.children);
-    expect(more?.children?.some(c => c.url === '/notes')).toBe(true);
+  test('visibleNavItems with the live config keeps Notes as a top-level item and Graph in the More menu', () => {
+    const items = visibleNavItems(siteConfig.nav);
+
+    const notes = items.find(i => i.url === '/notes');
+    expect(notes).toBeDefined();
+
+    const more = items.find(i => i.url === '');
+    expect(more).toBeDefined();
+    expect(more?.children?.some(c => c.url === '/notes')).toBe(false);
     expect(more?.children?.some(c => c.url === '/graph')).toBe(true);
   });
 });
