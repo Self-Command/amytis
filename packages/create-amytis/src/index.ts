@@ -54,32 +54,39 @@ function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const doGet = (targetUrl: string) => {
       https
-        .get(targetUrl, { headers: { "User-Agent": "create-amytis-cli" } }, (res) => {
-          if (res.statusCode === 301 || res.statusCode === 302) {
-            doGet(res.headers.location!);
-            return;
-          }
-          if (res.statusCode !== 200) {
-            reject(new Error(`Download failed with status ${res.statusCode}`));
-            return;
-          }
-          const file = fs.createWriteStream(dest);
-          res.pipe(file);
-          file.on("finish", () => file.close(() => resolve()));
-          file.on("error", (err) => {
-            fs.unlink(dest, () => {});
-            reject(err);
-          });
-        })
+        .get(
+          targetUrl,
+          { headers: { "User-Agent": "create-amytis-cli" } },
+          (res) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+              doGet(res.headers.location!);
+              return;
+            }
+            if (res.statusCode !== 200) {
+              reject(new Error(`Download failed with status ${res.statusCode}`));
+              return;
+            }
+
+            const file = fs.createWriteStream(dest);
+            res.pipe(file);
+
+            file.on("finish", () => file.close(() => resolve()));
+            file.on("error", (err) => {
+              fs.unlink(dest, () => {});
+              reject(err);
+            });
+          },
+        )
         .on("error", reject);
     };
+
     doGet(url);
   });
 }
 
 export function getArchiveMetadata(
   tag: string,
-  platform: NodeJS.Platform = process.platform
+  platform: NodeJS.Platform = process.platform,
 ): {
   url: string;
   filename: string;
@@ -108,7 +115,9 @@ export function buildExtractCommand(
 ): { command: string; args: string[] } {
   if (kind === "zip") {
     if (platform !== "win32") {
-      throw new Error("ZIP extraction is only supported on Windows in create-amytis");
+      throw new Error(
+        "ZIP extraction is only supported on Windows in create-amytis",
+      );
     }
 
     return {
@@ -144,18 +153,23 @@ function extractArchive(
   // Extract into a temp dir, then move the inner folder out
   const tmpDir = `${outDir}.__tmp__`;
   fs.mkdirSync(tmpDir, { recursive: true });
+
   const { command, args } = buildExtractCommand(
     archivePath,
     tmpDir,
     kind,
     platform,
   );
+
   execFileSync(command, args, { stdio: "inherit" });
 
-  // The tarball unpacks to a single top-level dir like "amytis-1.2.0/"
+  // The archive unpacks to a single top-level dir like "amytis-1.2.0/"
   const entries = fs.readdirSync(tmpDir);
+
   if (entries.length !== 1) {
-    throw new Error(`Unexpected tarball structure: ${entries.join(", ")}`);
+    throw new Error(
+      `Unexpected tarball structure: ${entries.join(", ")}`,
+    );
   }
 
   const innerDir = path.join(tmpDir, entries[0]);
@@ -180,21 +194,24 @@ function escapeTemplateLiteral(str: string): string {
  *
  *   title: { en: "Amytis", zh: "Amytis" },
  *
- * and also the multiline form:
+ * or:
  *
  *   title: {
  *     en: "Amytis",
  *     zh: "Amytis",
  *   },
  *
- * The individual string values allow escaped characters so the matcher does
- * not stop early on an escaped quote.
+ * The optional comma before the closing brace is important because the real
+ * site.config.ts uses trailing commas in multiline localized objects.
+ *
+ * The individual string values also allow escaped characters, so the matcher
+ * does not stop early on escaped quotes.
  */
 function localizedFieldPattern(field: string): RegExp {
   return new RegExp(
     `${field}\\s*:\\s*\\{\\s*` +
       `en\\s*:\\s*"(?:(?:\\\\.)|[^"\\\\])*"\\s*,\\s*` +
-      `zh\\s*:\\s*"(?:(?:\\\\.)|[^"\\\\])*"\\s*\\}`,
+      `zh\\s*:\\s*"(?:(?:\\\\.)|[^"\\\\])*"\\s*,?\\s*\\}`,
     "m",
   );
 }
@@ -229,6 +246,7 @@ export function patchSiteConfig(
   description: string,
 ): void {
   const configPath = path.join(projectDir, "site.config.ts");
+
   if (!fs.existsSync(configPath)) {
     console.warn("  Warning: site.config.ts not found, skipping patch");
     return;
@@ -246,9 +264,8 @@ export function patchSiteConfig(
 
   // description: { en: "...", zh: "..." }
   //
-  // The matcher intentionally accepts both the one-line and multiline forms
-  // used by Amytis configs. This is important because the real site config
-  // may be formatted across multiple lines after customization.
+  // The matcher accepts both one-line and multiline forms and allows an
+  // optional trailing comma before the closing brace.
   src = mustReplace(
     src,
     localizedFieldPattern("description"),
@@ -275,6 +292,7 @@ export function patchPackageJson(
   projectName: string,
 ): void {
   const pkgPath = path.join(projectDir, "package.json");
+
   if (!fs.existsSync(pkgPath)) {
     console.warn("  Warning: package.json not found, skipping patch");
     return;
@@ -286,6 +304,7 @@ export function patchPackageJson(
 
   pkg["name"] = projectName;
   pkg["private"] = true;
+
   delete pkg["repository"];
   delete pkg["bugs"];
   delete pkg["homepage"];
@@ -306,11 +325,13 @@ async function main(): Promise<void> {
 
   // 1. Project name
   let projectName = process.argv[2] ?? "";
+
   if (!projectName) {
     projectName = await prompt("Project name", "my-blog");
   }
 
   const targetDir = path.resolve(process.cwd(), projectName);
+
   if (fs.existsSync(targetDir)) {
     console.error(`Error: directory "${projectName}" already exists.`);
     process.exit(1);
@@ -318,18 +339,23 @@ async function main(): Promise<void> {
 
   // 2. Fetch latest release tag
   console.log("\nFetching latest Amytis release...");
+
   const release = await fetchJson(
     "https://api.github.com/repos/hutusi/amytis/releases/latest",
   );
+
   const tag = release["tag_name"] as string;
+
   if (!tag) {
     throw new Error("Could not determine latest release tag");
   }
+
   console.log(`  Found: ${tag}`);
 
   // 3. Download tarball
   const archive = getArchiveMetadata(tag);
   const archiveDest = path.join(process.cwd(), archive.filename);
+
   console.log("Downloading tarball...");
   await downloadFile(archive.url, archiveDest);
 
@@ -355,7 +381,10 @@ async function main(): Promise<void> {
 
   // 9. Run bun install
   console.log("Installing dependencies (bun install)...");
-  execSync("bun install", { cwd: targetDir, stdio: "inherit" });
+  execSync("bun install", {
+    cwd: targetDir,
+    stdio: "inherit",
+  });
 
   // 10. Success message
   console.log(`
