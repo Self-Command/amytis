@@ -92,18 +92,45 @@ describe("content/parse", () => {
     process.env.AMYTIS_RST_PYTHON = "python-does-not-exist";
     resetPythonRstRendererAvailabilityForTests();
 
-    const post = parseRstFileForTests(
-      path.join(process.cwd(), "content/series/rst-legacy/getting-started.rst"),
-      "getting-started",
-      undefined,
-      "rst-legacy",
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "amytis-rst-"));
+    const filePath = path.join(tempDir, "getting-started.rst");
+
+    fs.writeFileSync(
+      filePath,
+      [
+        "Getting Started With rST",
+        "************************",
+        "",
+        "Overview",
+        "--------",
+        "",
+        "This is a local fixture used to verify the legacy rST parser fallback.",
+        "",
+        ".. code-block:: ts",
+        "",
+        '   const message = "hello";',
+        "   console.log(message);",
+        "",
+      ].join("\n"),
+      "utf8",
     );
 
-    expect(post.title).toBe("Getting Started With rST");
-    expect(post.renderedHtml).toBeUndefined();
-    expect(post.content).toContain("Overview\n--------");
-    expect(post.content).toContain(".. code-block:: ts");
-    expect(getPythonRstRendererAvailabilityForTests()).toBe(false);
+    try {
+      const post = parseRstFileForTests(
+        filePath,
+        "getting-started",
+        undefined,
+        "rst-legacy",
+      );
+
+      expect(post.title).toBe("Getting Started With rST");
+      expect(post.renderedHtml).toBeUndefined();
+      expect(post.content).toContain("Overview\n--------");
+      expect(post.content).toContain(".. code-block:: ts");
+      expect(getPythonRstRendererAvailabilityForTests()).toBe(false);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   test("resolves authors via explicit list, single author, then site default", () => {
@@ -115,7 +142,15 @@ describe("content/parse", () => {
       const filePath = path.join(tempDir, "post.mdx");
       fs.writeFileSync(
         filePath,
-        ["---", 'title: "Author Chain"', ...frontmatterLines, "---", "", "Body", ""].join("\n"),
+        [
+          "---",
+          'title: "Author Chain"',
+          ...frontmatterLines,
+          "---",
+          "",
+          "Body",
+          "",
+        ].join("\n"),
         "utf8",
       );
       try {
@@ -126,16 +161,22 @@ describe("content/parse", () => {
     };
 
     // 1. Explicit `authors` array wins.
-    withTempMarkdownPost(["authors:", "  - Ada Lovelace", "  - Alan Turing"], (filePath) => {
-      expect(parseMarkdownFileForTests(filePath, "author-chain").authors)
-        .toEqual(["Ada Lovelace", "Alan Turing"]);
-    });
+    withTempMarkdownPost(
+      ["authors:", "  - Ada Lovelace", "  - Alan Turing"],
+      (filePath) => {
+        expect(parseMarkdownFileForTests(filePath, "author-chain").authors)
+          .toEqual(["Ada Lovelace", "Alan Turing"]);
+      },
+    );
 
     // 2. Single `author` string is wrapped.
-    withTempMarkdownPost(['author: "Grace Hopper"'], (filePath) => {
-      expect(parseMarkdownFileForTests(filePath, "author-chain").authors)
-        .toEqual(["Grace Hopper"]);
-    });
+    withTempMarkdownPost(
+      ['author: "Grace Hopper"'],
+      (filePath) => {
+        expect(parseMarkdownFileForTests(filePath, "author-chain").authors)
+          .toEqual(["Grace Hopper"]);
+      },
+    );
 
     // 3. No author fields at all → site-wide default.
     withTempMarkdownPost([], (filePath) => {
@@ -146,7 +187,8 @@ describe("content/parse", () => {
     // 4. Markdown semantics: an explicitly-empty `authors: []` means
     //    "no byline" — it does NOT fall through to series/site defaults.
     withTempMarkdownPost(["authors: []"], (filePath) => {
-      expect(parseMarkdownFileForTests(filePath, "author-chain").authors).toEqual([]);
+      expect(parseMarkdownFileForTests(filePath, "author-chain").authors)
+        .toEqual([]);
     });
   });
 
@@ -162,7 +204,16 @@ describe("content/parse", () => {
       fs.mkdirSync(seriesDir, { recursive: true });
       fs.writeFileSync(
         path.join(seriesDir, "index.md"),
-        ["---", 'title: "Author Series Fixture"', "authors:", "  - Series Author Fixture", "---", "", "Body", ""].join("\n"),
+        [
+          "---",
+          'title: "Author Series Fixture"',
+          "authors:",
+          "  - Series Author Fixture",
+          "---",
+          "",
+          "Body",
+          "",
+        ].join("\n"),
         "utf8",
       );
 
@@ -170,11 +221,23 @@ describe("content/parse", () => {
       const filePath = path.join(tempDir, "child.mdx");
       fs.writeFileSync(
         filePath,
-        ["---", 'title: "Series Child"', "---", "", "Body", ""].join("\n"),
+        [
+          "---",
+          'title: "Series Child"',
+          "---",
+          "",
+          "Body",
+          "",
+        ].join("\n"),
         "utf8",
       );
 
-      const post = parseMarkdownFileForTests(filePath, "child", undefined, seriesSlug);
+      const post = parseMarkdownFileForTests(
+        filePath,
+        "child",
+        undefined,
+        seriesSlug,
+      );
       expect(post.authors).toEqual(["Series Author Fixture"]);
     } finally {
       if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
