@@ -275,12 +275,15 @@ export function patchSiteConfig(
 
   // footerText — replace the complete localized template-literal block while
   // preserving the dynamic current-year expression.
+  //
+  // The matcher accepts both one-line and multiline forms and also allows
+  // an optional trailing comma after the zh template literal.
   const safeTitle = escapeTemplateLiteral(title);
 
   src = mustReplace(
     src,
-    /footerText:\s*\{\s*en:\s*`[^`]*`,\s*zh:\s*`[^`]*`\s*\}/m,
-    `footerText: { en: \`© \\${new Date().getFullYear()} ${safeTitle}. All rights reserved.\`, zh: \`© \\${new Date().getFullYear()} ${safeTitle}. 保留所有权利。\` }`,
+    /footerText:\s*\{\s*en:\s*`[^`]*`,\s*zh:\s*`[^`]*`,?\s*\}/m,
+    `footerText: { en: \`© \${new Date().getFullYear()} ${safeTitle}. All rights reserved.\`, zh: \`© \${new Date().getFullYear()} ${safeTitle}. 保留所有权利。\` }`,
     "footerText",
   );
 
