@@ -77,7 +77,10 @@ function downloadFile(url: string, dest: string): Promise<void> {
   });
 }
 
-export function getArchiveMetadata(tag: string, platform: NodeJS.Platform = process.platform): {
+export function getArchiveMetadata(
+  tag: string,
+  platform: NodeJS.Platform = process.platform
+): {
   url: string;
   filename: string;
   kind: "zip" | "tar.gz";
@@ -132,11 +135,21 @@ export function buildExtractCommand(
   };
 }
 
-function extractArchive(archivePath: string, outDir: string, kind: "zip" | "tar.gz", platform: NodeJS.Platform = process.platform): void {
+function extractArchive(
+  archivePath: string,
+  outDir: string,
+  kind: "zip" | "tar.gz",
+  platform: NodeJS.Platform = process.platform,
+): void {
   // Extract into a temp dir, then move the inner folder out
   const tmpDir = `${outDir}.__tmp__`;
   fs.mkdirSync(tmpDir, { recursive: true });
-  const { command, args } = buildExtractCommand(archivePath, tmpDir, kind, platform);
+  const { command, args } = buildExtractCommand(
+    archivePath,
+    tmpDir,
+    kind,
+    platform,
+  );
   execFileSync(command, args, { stdio: "inherit" });
 
   // The tarball unpacks to a single top-level dir like "amytis-1.2.0/"
@@ -144,6 +157,7 @@ function extractArchive(archivePath: string, outDir: string, kind: "zip" | "tar.
   if (entries.length !== 1) {
     throw new Error(`Unexpected tarball structure: ${entries.join(", ")}`);
   }
+
   const innerDir = path.join(tmpDir, entries[0]);
   fs.renameSync(innerDir, outDir);
   fs.rmdirSync(tmpDir);
@@ -155,28 +169,65 @@ function extractArchive(archivePath: string, outDir: string, kind: "zip" | "tar.
 // ---------------------------------------------------------------------------
 
 function escapeTemplateLiteral(str: string): string {
-  return str.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+  return str
+    .replace(/\\/g, "\\\\")
+    .replace(/`/g, "\\`")
+    .replace(/\$\{/g, "\\${");
 }
 
-// Replace `pattern` in `src`, failing loudly when the pattern no longer
-// matches — a silent miss here means the downloaded site.config.ts shape
-// drifted from what this CLI knows how to patch, and the user would get an
-// unpatched site with no hint why.
-function mustReplace(src: string, pattern: RegExp, replacement: string, field: string): string {
+/**
+ * Matches a localized config object such as:
+ *
+ *   title: { en: "Amytis", zh: "Amytis" },
+ *
+ * and also the multiline form:
+ *
+ *   title: {
+ *     en: "Amytis",
+ *     zh: "Amytis",
+ *   },
+ *
+ * The individual string values allow escaped characters so the matcher does
+ * not stop early on an escaped quote.
+ */
+function localizedFieldPattern(field: string): RegExp {
+  return new RegExp(
+    `${field}\\s*:\\s*\\{\\s*` +
+      `en\\s*:\\s*"(?:(?:\\\\.)|[^"\\\\])*"\\s*,\\s*` +
+      `zh\\s*:\\s*"(?:(?:\\\\.)|[^"\\\\])*"\\s*\\}`,
+    "m",
+  );
+}
+
+/**
+ * Replace `pattern` in `src`, failing loudly when the pattern no longer
+ * matches — a silent miss here means the downloaded site.config.ts shape
+ * drifted from what this CLI knows how to patch.
+ */
+function mustReplace(
+  src: string,
+  pattern: RegExp,
+  replacement: string,
+  field: string,
+): string {
   if (!pattern.test(src)) {
     throw new Error(
       `create-amytis is out of sync with the downloaded site.config.ts: ` +
-      `could not find the "${field}" block to patch. Edit site.config.ts manually, ` +
-      `and please report this at https://github.com/hutusi/amytis/issues`
+        `could not find the "${field}" block to patch. Edit site.config.ts manually, ` +
+        `and please report this at https://github.com/hutusi/amytis/issues`,
     );
   }
-  // Function replacer: a plain-string replacement would give `$&`/`$$`/`` $` ``
-  // in user-supplied titles special String.replace semantics and corrupt the
-  // generated config.
+
+  // Function replacer is intentional: a plain-string replacement would apply
+  // String.replace semantics to user content such as "$&", "$$", or "$`".
   return src.replace(pattern, () => replacement);
 }
 
-export function patchSiteConfig(projectDir: string, title: string, description: string): void {
+export function patchSiteConfig(
+  projectDir: string,
+  title: string,
+  description: string,
+): void {
   const configPath = path.join(projectDir, "site.config.ts");
   if (!fs.existsSync(configPath)) {
     console.warn("  Warning: site.config.ts not found, skipping patch");
@@ -188,39 +239,50 @@ export function patchSiteConfig(projectDir: string, title: string, description: 
   // title: { en: "...", zh: "..." }
   src = mustReplace(
     src,
-    /title:\s*\{\s*en:\s*"[^"]*",\s*zh:\s*"[^"]*"\s*\}/,
+    localizedFieldPattern("title"),
     `title: { en: ${JSON.stringify(title)}, zh: ${JSON.stringify(title)} }`,
-    "title"
+    "title",
   );
 
   // description: { en: "...", zh: "..." }
+  //
+  // The matcher intentionally accepts both the one-line and multiline forms
+  // used by Amytis configs. This is important because the real site config
+  // may be formatted across multiple lines after customization.
   src = mustReplace(
     src,
-    /description:\s*\{\s*en:\s*"[^"]*",\s*zh:\s*"[^"]*"\s*\}/,
+    localizedFieldPattern("description"),
     `description: { en: ${JSON.stringify(description)}, zh: ${JSON.stringify(description)} }`,
-    "description"
+    "description",
   );
 
-  // footerText — replace "Amytis" occurrences in template literals with project title
+  // footerText — replace the complete localized template-literal block while
+  // preserving the dynamic current-year expression.
   const safeTitle = escapeTemplateLiteral(title);
+
   src = mustReplace(
     src,
-    /footerText:\s*\{\s*en:\s*`[^`]*`,\s*zh:\s*`[^`]*`\s*\}/,
-    `footerText: { en: \`© \${new Date().getFullYear()} ${safeTitle}. All rights reserved.\`, zh: \`© \${new Date().getFullYear()} ${safeTitle}. 保留所有权利。\` }`,
-    "footerText"
+    /footerText:\s*\{\s*en:\s*`[^`]*`,\s*zh:\s*`[^`]*`\s*\}/m,
+    `footerText: { en: \`© \\${new Date().getFullYear()} ${safeTitle}. All rights reserved.\`, zh: \`© \\${new Date().getFullYear()} ${safeTitle}. 保留所有权利。\` }`,
+    "footerText",
   );
 
   fs.writeFileSync(configPath, src, "utf8");
 }
 
-export function patchPackageJson(projectDir: string, projectName: string): void {
+export function patchPackageJson(
+  projectDir: string,
+  projectName: string,
+): void {
   const pkgPath = path.join(projectDir, "package.json");
   if (!fs.existsSync(pkgPath)) {
     console.warn("  Warning: package.json not found, skipping patch");
     return;
   }
 
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as Record<string, unknown>;
+  const pkg = JSON.parse(
+    fs.readFileSync(pkgPath, "utf8"),
+  ) as Record<string, unknown>;
 
   pkg["name"] = projectName;
   pkg["private"] = true;
@@ -228,7 +290,11 @@ export function patchPackageJson(projectDir: string, projectName: string): void 
   delete pkg["bugs"];
   delete pkg["homepage"];
 
-  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
+  fs.writeFileSync(
+    pkgPath,
+    JSON.stringify(pkg, null, 2) + "\n",
+    "utf8",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -253,10 +319,12 @@ async function main(): Promise<void> {
   // 2. Fetch latest release tag
   console.log("\nFetching latest Amytis release...");
   const release = await fetchJson(
-    "https://api.github.com/repos/hutusi/amytis/releases/latest"
+    "https://api.github.com/repos/hutusi/amytis/releases/latest",
   );
   const tag = release["tag_name"] as string;
-  if (!tag) throw new Error("Could not determine latest release tag");
+  if (!tag) {
+    throw new Error("Could not determine latest release tag");
+  }
   console.log(`  Found: ${tag}`);
 
   // 3. Download tarball
@@ -274,7 +342,7 @@ async function main(): Promise<void> {
   const siteTitle = await prompt("\nSite title", projectName);
   const siteDescription = await prompt(
     "Site description",
-    "My digital garden"
+    "My digital garden",
   );
 
   // 7. Patch site.config.ts
