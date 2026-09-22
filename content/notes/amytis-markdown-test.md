@@ -11,6 +11,7 @@ draft: false
 toc: true
 backlinks: true
 commentable: false
+featured: true
 share: true
 ---
 
